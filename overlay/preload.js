@@ -7,9 +7,21 @@ contextBridge.exposeInMainWorld('mochi', {
   onDistractionTimer: (cb) => ipcRenderer.on('distraction-timer-update', (_, s) => cb(s)),
   onTaskNagging: (cb) => ipcRenderer.on('task-nagging', (_, name) => cb(name)),
   onTaskBadgeUpdate: (cb) => ipcRenderer.on('task-badge-update', (_, count) => cb(count)),
+  onSessionStatus: (cb) => ipcRenderer.on('session-status', (_, status) => cb(status)),
+  onTodayList: (cb) => ipcRenderer.on('today-list', (_, items) => cb(items)),
+  onTogglePanel: (cb) => ipcRenderer.on('toggle-panel', () => cb()),
+  onOpenPanel: (cb) => ipcRenderer.on('open-panel', () => cb()),
 
   // Send to main
-  characterClicked: () => ipcRenderer.send('character-clicked'),
   setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),
-  dragPositionUpdate: (x, y) => ipcRenderer.send('drag-position-update', { x, y })
+  requestInit: () => ipcRenderer.send('overlay-request-init'),
+
+  // Session controls
+  startWork: () => ipcRenderer.send('session-start-work'),
+  takeBreak: () => ipcRenderer.send('session-take-break'),
+
+  // Today list
+  addTodo: (text) => ipcRenderer.send('today-add', text),
+  toggleTodo: (id) => ipcRenderer.send('today-toggle', id),
+  removeTodo: (id) => ipcRenderer.send('today-remove', id)
 })

@@ -18,6 +18,7 @@ class MoodEngine extends EventEmitter {
 
     // Internal timers and state
     this._hasNagging = false
+    this._sessionState = 'idle'   // idle | working | break — only 'working' triggers reactions
     this._lastWindowInfo = null
     this._lastClassification = 'neutral'
     this._lastWindowChangeTime = Date.now()
@@ -37,6 +38,17 @@ class MoodEngine extends EventEmitter {
   pause() { this.paused = true }
   resume() { this.paused = false; this._recalculateMood() }
 
+  setSessionState(state) {
+    this._sessionState = state
+    if (state !== 'working') {
+      // Leaving work mode: stop tracking focus/distraction timers.
+      this._distractionStartTime = null
+      this._focusStartTime = null
+      this._lastClassification = 'neutral'
+    }
+    this._recalculateMood()
+  }
+
   onWindowChanged(windowInfo) {
     if (this.paused) return
     this._lastWindowInfo = windowInfo
@@ -52,10 +64,12 @@ class MoodEngine extends EventEmitter {
       this._focusStartTime = null
     } else if (classification === 'productive') {
       if (prev !== 'productive') this._focusStartTime = Date.now()
+      if (this._distractionStartTime) this.emit('distraction-timer', 0)
       this._distractionStartTime = null
     } else {
       // neutral
       this._focusStartTime = null
+      if (this._distractionStartTime) this.emit('distraction-timer', 0)
       this._distractionStartTime = null
     }
 
@@ -81,12 +95,11 @@ class MoodEngine extends EventEmitter {
   }
 
   _computeMood() {
-    if (this._hasNagging) return 'nagging'
+    // Outside an active work session, Mochi is calm and never nags.
+    if (this._sessionState === 'idle') return 'encouraging'
+    if (this._sessionState === 'break') return 'happy'
 
-    const hour = new Date().getHours()
-    const start = this.store.get('settings.activeHoursStart') ?? 9
-    const end = this.store.get('settings.activeHoursEnd') ?? 22
-    if (hour < start || hour >= end) return 'sleeping'
+    if (this._hasNagging) return 'nagging'
 
     if (this._lastClassification === 'distraction' && this._distractionStartTime) {
       const elapsed = Date.now() - this._distractionStartTime

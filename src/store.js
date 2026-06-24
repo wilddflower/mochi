@@ -57,6 +57,8 @@ const DEFAULTS = {
     "build, ship, learn, repeat"
   ],
   tasks: [],
+  todayList: [],          // simple daily checklist: { id, text, done, date }
+  dailyBreak: {},         // { date: 'YYYY-MM-DD', minutesUsed: number }
   settings: {
     activeHoursStart: 9,
     activeHoursEnd: 22,

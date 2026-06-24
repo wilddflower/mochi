@@ -4,19 +4,19 @@ const { spawn } = require('child_process')
 // PowerShell script injected once at startup. Add-Type compiles C# once (~200ms),
 // then subsequent polls are near-instant.
 const PS_FUNCTION = `
-function Get-ForegroundWindowInfo {
-  Add-Type @"
-    using System;
-    using System.Runtime.InteropServices;
-    public class MochiWin32 {
-      [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
-      [DllImport("user32.dll")] public static extern int GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-    }
+Add-Type -ErrorAction SilentlyContinue @"
+  using System;
+  using System.Runtime.InteropServices;
+  public class MochiWin32 {
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern int GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+  }
 "@
+function Get-ForegroundWindowInfo {
   $hwnd = [MochiWin32]::GetForegroundWindow()
-  $pid = 0
-  [MochiWin32]::GetWindowThreadProcessId($hwnd, [ref]$pid) | Out-Null
-  $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+  $winPid = 0
+  [MochiWin32]::GetWindowThreadProcessId($hwnd, [ref]$winPid) | Out-Null
+  $proc = Get-Process -Id $winPid -ErrorAction SilentlyContinue
   if ($proc) {
     [PSCustomObject]@{ ProcessName = $proc.ProcessName; WindowTitle = $proc.MainWindowTitle } | ConvertTo-Json -Compress
   } else {
@@ -25,6 +25,18 @@ function Get-ForegroundWindowInfo {
 }
 Write-Host "MOCHI_READY"
 `
+
+function matchSiteInTitle(site, title) {
+  const escaped = site.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  if (new RegExp(`\\b${escaped}\\b`, 'i').test(title)) return true
+  // Also match the domain name without TLD — "youtube.com" → "youtube"
+  const name = site.replace(/\.(com|org|net|io|tv|gg|co|app|dev|space|site|xyz)$/i, '')
+  if (name !== site && name.length >= 3) {
+    const nameEscaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    if (new RegExp(`\\b${nameEscaped}\\b`, 'i').test(title)) return true
+  }
+  return false
+}
 
 class WindowMonitor extends EventEmitter {
   constructor(store) {
@@ -171,14 +183,14 @@ class WindowMonitor extends EventEmitter {
     const productiveSites = store.get('productiveSites') || []
     const distractionSites = store.get('distractionSites') || []
 
-    // Site match wins over app match (word-boundary to avoid false positives)
+    // Site match wins over app match.
+    // Match both the full domain ("youtube.com") and the name part ("youtube")
+    // because browser titles typically show "Video - YouTube" not "youtube.com".
     for (const site of distractionSites) {
-      const escaped = site.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      if (new RegExp(`\\b${escaped}\\b`, 'i').test(title)) return 'distraction'
+      if (matchSiteInTitle(site, title)) return 'distraction'
     }
     for (const site of productiveSites) {
-      const escaped = site.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      if (new RegExp(`\\b${escaped}\\b`, 'i').test(title)) return 'productive'
+      if (matchSiteInTitle(site, title)) return 'productive'
     }
 
     // App match (case-insensitive substring)

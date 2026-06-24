@@ -9,13 +9,18 @@ class WindowManager {
   }
 
   async createOverlay() {
-    const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
-    const x = this.store.get('settings.overlayX') || sw - 200
-    const y = this.store.get('settings.overlayY') || sh - 250
+    // Use full display bounds (not workArea) so Mochi can sit ON the taskbar,
+    // bottom-right by the clock.
+    const display = screen.getPrimaryDisplay()
+    const { width: sw, height: sh, x: bx, y: by } = display.bounds
+    const WIN_W = 320
+    const WIN_H = 520
+    const x = bx + sw - WIN_W - 6
+    const y = by + sh - WIN_H
 
     this.overlayWindow = new BrowserWindow({
-      width: 160,
-      height: 200,
+      width: WIN_W,
+      height: WIN_H,
       x,
       y,
       transparent: true,
@@ -23,6 +28,7 @@ class WindowManager {
       alwaysOnTop: true,
       skipTaskbar: true,
       resizable: false,
+      focusable: true,
       webPreferences: {
         preload: path.join(__dirname, '..', 'overlay', 'preload.js'),
         contextIsolation: true,
@@ -32,6 +38,11 @@ class WindowManager {
 
     this.overlayWindow.setAlwaysOnTop(true, 'screen-saver')
     this.overlayWindow.setIgnoreMouseEvents(true, { forward: true })
+    if (process.env.MOCHI_DEBUG) {
+      this.overlayWindow.webContents.on('console-message', (_e, _lvl, msg) => {
+        console.log('[overlay console]', msg)
+      })
+    }
     await this.overlayWindow.loadFile(path.join(__dirname, '..', 'overlay', 'index.html'))
 
     this.overlayWindow.on('closed', () => { this.overlayWindow = null })

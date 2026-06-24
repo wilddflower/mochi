@@ -29,6 +29,8 @@ describe('MoodEngine — state transitions', () => {
     jest.useFakeTimers()
     store = makeStore()
     engine = new MoodEngine(store)
+    // Distraction/focus reactions only happen during an active work session.
+    engine.setSessionState('working')
   })
 
   afterEach(() => {
@@ -82,24 +84,23 @@ describe('MoodEngine — state transitions', () => {
     expect(engine.getCurrentMood()).toBe('nagging')
   })
 
-  test('sleeping state when outside active hours', () => {
-    const s = makeStore({ settings: { activeHoursStart: 9, activeHoursEnd: 10, paused: false } })
-    // The test runs at whatever hour it is; force sleeping by making both 0-0
-    const s2 = makeStore({ settings: { activeHoursStart: 0, activeHoursEnd: 0, paused: false } })
-    const e2 = new MoodEngine(s2)
-    // hour is never between 0 and 0 exclusively (end is exclusive), so always sleeping
-    expect(e2.getCurrentMood()).toBe('sleeping')
-    if (e2._idleTimer) clearInterval(e2._idleTimer)
-    if (e2._distractionTimerTick) clearInterval(e2._distractionTimerTick)
+  test('idle session state is always encouraging (no nagging off the clock)', () => {
+    engine.setSessionState('idle')
+    engine.onWindowChanged({ processName: 'Discord', windowTitle: 'Discord' })
+    expect(engine.getCurrentMood()).toBe('encouraging')
   })
 
-  test('nagging beats sleeping when both conditions are true', () => {
-    const s = makeStore({ settings: { activeHoursStart: 0, activeHoursEnd: 0, paused: false } })
-    const e2 = new MoodEngine(s)
-    e2.setNagging(true)
-    expect(e2.getCurrentMood()).toBe('nagging')
-    if (e2._idleTimer) clearInterval(e2._idleTimer)
-    if (e2._distractionTimerTick) clearInterval(e2._distractionTimerTick)
+  test('break session state stays happy even on a distraction', () => {
+    engine.setSessionState('break')
+    engine.onWindowChanged({ processName: 'Discord', windowTitle: 'Discord' })
+    expect(engine.getCurrentMood()).toBe('happy')
+  })
+
+  test('nagging only applies while working, not when idle', () => {
+    engine.setNagging(true)
+    expect(engine.getCurrentMood()).toBe('nagging')
+    engine.setSessionState('idle')
+    expect(engine.getCurrentMood()).toBe('encouraging')
   })
 
   test('returns to encouraging when switching to an unknown/neutral app', () => {
