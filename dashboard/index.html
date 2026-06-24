@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mochi Dashboard</title>
+<style>
+  :root {
+    --pink: #ffb6c1;
+    --pink-dark: #e87d92;
+    --bg: #fdf6f8;
+    --card: #fff;
+    --border: #e8d0d8;
+    --text: #2d2d2d;
+    --muted: #888;
+    --danger: #e74c3c;
+    --success: #2ecc71;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',sans-serif; background:var(--bg); color:var(--text); font-size:13px; }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #ffb6c1, #ffd4dc);
+    padding: 16px 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-top { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .header-top h1 { font-size:18px; font-weight:700; color:#a0294a; }
+  .header-top .emoji { font-size:22px; }
+
+  /* ── Tabs ── */
+  .tabs { display:flex; gap:2px; }
+  .tab {
+    padding:8px 16px;
+    border:none; background:rgba(255,255,255,0.4);
+    border-radius:6px 6px 0 0;
+    cursor:pointer; font-size:12px; font-weight:600;
+    color:#a0294a; transition:background 0.15s;
+  }
+  .tab:hover { background:rgba(255,255,255,0.65); }
+  .tab.active { background:#fff; color:#a0294a; }
+
+  /* ── Content area ── */
+  .content { padding:20px; }
+  .panel { display:none; }
+  .panel.active { display:block; }
+
+  /* ── Cards / sections ── */
+  .card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:8px; padding:16px; margin-bottom:14px;
+    box-shadow:var(--shadow);
+  }
+  .card h3 { font-size:12px; font-weight:700; text-transform:uppercase;
+              letter-spacing:0.5px; color:var(--muted); margin-bottom:10px; }
+
+  /* ── Form inputs ── */
+  .field-row { display:flex; gap:8px; margin-bottom:10px; }
+  input[type=text], input[type=number], select {
+    border:1px solid var(--border); border-radius:6px;
+    padding:6px 10px; font-size:13px; outline:none;
+    background:#fff; color:var(--text);
+    transition:border-color 0.15s;
+  }
+  input[type=text]:focus, input[type=number]:focus { border-color:var(--pink-dark); }
+  input[type=text].flex { flex:1; }
+  input[type=number] { width:80px; }
+
+  button {
+    padding:6px 14px; border:none; border-radius:6px;
+    font-size:12px; font-weight:600; cursor:pointer;
+    transition:opacity 0.15s;
+  }
+  button:hover { opacity:0.85; }
+  .btn-primary { background:var(--pink-dark); color:#fff; }
+  .btn-danger  { background:var(--danger); color:#fff; padding:3px 8px; font-size:11px; }
+  .btn-success { background:var(--success); color:#fff; padding:3px 8px; font-size:11px; }
+  .btn-ghost   { background:transparent; border:1px solid var(--border); color:var(--muted); }
+
+  /* ── Tag/pill list ── */
+  .tag-list { display:flex; flex-wrap:wrap; gap:6px; min-height:32px; }
+  .tag {
+    display:flex; align-items:center; gap:4px;
+    background:var(--bg); border:1px solid var(--border);
+    border-radius:99px; padding:3px 10px;
+    font-size:12px;
+  }
+  .tag .rm { cursor:pointer; color:var(--muted); font-size:14px; line-height:1; }
+  .tag .rm:hover { color:var(--danger); }
+
+  /* ── Task list ── */
+  .task-item {
+    display:flex; align-items:center; gap:8px;
+    padding:8px 10px; border:1px solid var(--border);
+    border-radius:6px; margin-bottom:6px; background:var(--card);
+  }
+  .task-item.overdue { border-color:#f1948a; background:#fff5f5; }
+  .task-item.done { opacity:0.5; }
+  .task-name { flex:1; font-size:13px; }
+  .task-deadline { font-size:11px; color:var(--muted); }
+  .task-deadline.overdue-label { color:var(--danger); font-weight:600; }
+  .task-actions { display:flex; gap:4px; flex-shrink:0; }
+  .empty-state { color:var(--muted); font-style:italic; padding:10px 0; text-align:center; }
+
+  /* ── Stats ── */
+  .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .stat-box { text-align:center; padding:14px 10px; background:var(--bg); border-radius:8px; border:1px solid var(--border); }
+  .stat-val { font-size:28px; font-weight:700; color:var(--pink-dark); }
+  .stat-label { font-size:11px; color:var(--muted); margin-top:2px; }
+
+  /* ── Settings row ── */
+  .setting-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); }
+  .setting-row:last-child { border-bottom:none; }
+  .setting-label { font-size:13px; }
+  .setting-desc { font-size:11px; color:var(--muted); margin-top:2px; }
+  .toggle {
+    width:38px; height:20px; background:#ccc; border-radius:10px;
+    cursor:pointer; position:relative; transition:background 0.2s; flex-shrink:0;
+  }
+  .toggle::after {
+    content:''; position:absolute; width:16px; height:16px;
+    background:#fff; border-radius:50%; top:2px; left:2px;
+    transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+  .toggle.on { background:var(--pink-dark); }
+  .toggle.on::after { transform:translateX(18px); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <span class="emoji">🐰</span>
+    <h1>Mochi Dashboard</h1>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="tasks">Tasks</button>
+    <button class="tab" data-tab="apps">App Lists</button>
+    <button class="tab" data-tab="sites">Site Lists</button>
+    <button class="tab" data-tab="stats">Stats</button>
+    <button class="tab" data-tab="quotes">Quotes</button>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- ── Tasks ─────────────────────────────────────────── -->
+  <div class="panel active" id="panel-tasks">
+    <div class="card">
+      <h3>Add Task</h3>
+      <div class="field-row">
+        <input type="text" class="flex" id="task-name" placeholder="Task name..." />
+        <input type="number" id="task-duration" placeholder="min" min="1" value="60" />
+        <button class="btn-primary" onclick="addTask()">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Active Tasks</h3>
+      <div id="task-list"><div class="empty-state">No tasks yet — add one above!</div></div>
+    </div>
+  </div>
+
+  <!-- ── App Lists ──────────────────────────────────────── -->
+  <div class="panel" id="panel-apps">
+    <div class="card">
+      <h3>Productive Apps</h3>
+      <div class="field-row">
+        <input type="text" class="flex" id="prod-app-input" placeholder="e.g. code.exe" />
+        <button class="btn-primary" onclick="addItem('productiveApps', 'prod-app-input', 'prod-app-tags')">Add</button>
+      </div>
+      <div class="tag-list" id="prod-app-tags"></div>
+    </div>
+    <div class="card">
+      <h3>Distraction Apps</h3>
+      <div class="field-row">
+        <input type="text" class="flex" id="dist-app-input" placeholder="e.g. discord.exe" />
+        <button class="btn-primary" onclick="addItem('distractionApps', 'dist-app-input', 'dist-app-tags')">Add</button>
+      </div>
+      <div class="tag-list" id="dist-app-tags"></div>
+    </div>
+  </div>
+
+  <!-- ── Site Lists ─────────────────────────────────────── -->
+  <div class="panel" id="panel-sites">
+    <div class="card">
+      <h3>Productive Sites</h3>
+      <div class="field-row">
+        <input type="text" class="flex" id="prod-site-input" placeholder="e.g. github.com" />
+        <button class="btn-primary" onclick="addItem('productiveSites', 'prod-site-input', 'prod-site-tags')">Add</button>
+      </div>
+      <div class="tag-list" id="prod-site-tags"></div>
+    </div>
+    <div class="card">
+      <h3>Distraction Sites</h3>
+      <div class="field-row">
+        <input type="text" class="flex" id="dist-site-input" placeholder="e.g. youtube.com" />
+        <button class="btn-primary" onclick="addItem('distractionSites', 'dist-site-input', 'dist-site-tags')">Add</button>
+      </div>
+      <div class="tag-list" id="dist-site-tags"></div>
+    </div>
+  </div>
+
+  <!-- ── Stats ──────────────────────────────────────────── -->
+  <div class="panel" id="panel-stats">
+    <div class="card">
+      <h3>Today's Focus</h3>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="stat-focus">0</div>
+          <div class="stat-label">Focus minutes</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-distract">0</div>
+          <div class="stat-label">Distraction minutes</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-streak">0</div>
+          <div class="stat-label">Current streak (min)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-longest">0</div>
+          <div class="stat-label">Longest streak (min)</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Settings</h3>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Launch at Windows startup</div>
+          <div class="setting-desc">Start Mochi automatically when you log in</div>
+        </div>
+        <div class="toggle" id="startup-toggle" onclick="toggleStartup()"></div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Active hours</div>
+          <div class="setting-desc">Mochi sleeps outside these hours</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" id="hours-start" min="0" max="23" value="9" style="width:55px" onchange="saveHours()"> : 00 –
+          <input type="number" id="hours-end" min="0" max="23" value="22" style="width:55px" onchange="saveHours()"> : 00
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Quotes ─────────────────────────────────────────── -->
+  <div class="panel" id="panel-quotes">
+    <div class="card">
+      <h3>Add Quote</h3>
+      <div class="field-row">
+        <input type="text" class="flex" id="quote-input" placeholder="your motivational quote..." />
+        <button class="btn-primary" onclick="addItem('quotes', 'quote-input', 'quote-tags')">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Quote Pool</h3>
+      <div class="tag-list" id="quote-tags"></div>
+    </div>
+  </div>
+
+</div><!-- .content -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let lists = { productiveApps: [], distractionApps: [], productiveSites: [], distractionSites: [], quotes: [] }
+
+// ── Tab switching ─────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab))
+})
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name))
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `panel-${name}`))
+  if (name === 'stats') refreshStats()
+}
+
+window.mochi.onSwitchTab(name => switchTab(name))
+
+// ── Init ───────────────────────────────────────────────────────────
+async function init() {
+  lists = await window.mochi.getLists()
+  renderTags('productiveApps', 'prod-app-tags')
+  renderTags('distractionApps', 'dist-app-tags')
+  renderTags('productiveSites', 'prod-site-tags')
+  renderTags('distractionSites', 'dist-site-tags')
+  renderTags('quotes', 'quote-tags')
+  await renderTasks()
+  await refreshStats()
+
+  // Startup toggle
+  const enabled = await window.mochi.getStartupStatus()
+  document.getElementById('startup-toggle').classList.toggle('on', enabled)
+}
+init()
+
+// ── Tasks ──────────────────────────────────────────────────────────
+async function renderTasks(tasks) {
+  if (!tasks) tasks = await window.mochi.getTasks()
+  const list = document.getElementById('task-list')
+  if (!tasks || tasks.length === 0) {
+    list.innerHTML = '<div class="empty-state">No tasks yet — add one above!</div>'
+    return
+  }
+
+  const now = new Date()
+  list.innerHTML = tasks.map(t => {
+    const deadline = new Date(t.deadlineAt)
+    const isOverdue = !t.done && deadline < now
+    const timeStr = formatDeadline(deadline, now)
+    return `
+    <div class="task-item ${isOverdue ? 'overdue' : ''} ${t.done ? 'done' : ''}">
+      <div class="task-name">${escHtml(t.name)}</div>
+      <div class="task-deadline ${isOverdue ? 'overdue-label' : ''}">${timeStr}</div>
+      <div class="task-actions">
+        ${!t.done ? `<button class="btn-success" onclick="completeTask(${t.id})">✓</button>` : '<span style="color:#2ecc71;font-size:12px">✓ Done</span>'}
+        <button class="btn-danger" onclick="dismissTask(${t.id})">✕</button>
+      </div>
+    </div>`
+  }).join('')
+}
+
+function formatDeadline(deadline, now) {
+  const diff = deadline - now
+  if (diff < 0) {
+    const over = Math.abs(diff)
+    const m = Math.floor(over / 60000)
+    return m < 60 ? `${m}m overdue` : `${Math.floor(m/60)}h ${m%60}m overdue`
+  }
+  const m = Math.floor(diff / 60000)
+  return m < 60 ? `due in ${m}m` : `due in ${Math.floor(m/60)}h ${m%60}m`
+}
+
+async function addTask() {
+  const name = document.getElementById('task-name').value.trim()
+  const dur = parseInt(document.getElementById('task-duration').value) || 60
+  if (!name) return
+  await window.mochi.addTask(name, dur)
+  document.getElementById('task-name').value = ''
+  await renderTasks()
+}
+
+async function completeTask(id) {
+  await window.mochi.completeTask(id)
+  await renderTasks()
+}
+
+async function dismissTask(id) {
+  await window.mochi.dismissTask(id)
+  await renderTasks()
+}
+
+document.getElementById('task-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addTask()
+})
+
+window.mochi.onTasksUpdate(tasks => renderTasks(tasks))
+
+// ── Tag lists ──────────────────────────────────────────────────────
+function renderTags(listKey, containerId) {
+  const container = document.getElementById(containerId)
+  const items = lists[listKey] || []
+  if (items.length === 0) {
+    container.innerHTML = '<span style="color:#aaa;font-style:italic;font-size:12px">None added yet</span>'
+    return
+  }
+  container.innerHTML = items.map((item, i) =>
+    `<span class="tag">${escHtml(item)}<span class="rm" onclick="removeItem('${listKey}','${containerId}',${i})">×</span></span>`
+  ).join('')
+}
+
+function addItem(listKey, inputId, containerId) {
+  const input = document.getElementById(inputId)
+  const val = input.value.trim()
+  if (!val) return
+  if (!lists[listKey]) lists[listKey] = []
+  if (!lists[listKey].includes(val)) {
+    lists[listKey].push(val)
+    renderTags(listKey, containerId)
+    saveLists()
+  }
+  input.value = ''
+}
+
+function removeItem(listKey, containerId, idx) {
+  lists[listKey].splice(idx, 1)
+  renderTags(listKey, containerId)
+  saveLists()
+}
+
+document.querySelectorAll('input[type=text]').forEach(el => {
+  el.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return
+    const map = {
+      'prod-app-input': () => addItem('productiveApps', 'prod-app-input', 'prod-app-tags'),
+      'dist-app-input': () => addItem('distractionApps', 'dist-app-input', 'dist-app-tags'),
+      'prod-site-input': () => addItem('productiveSites', 'prod-site-input', 'prod-site-tags'),
+      'dist-site-input': () => addItem('distractionSites', 'dist-site-input', 'dist-site-tags'),
+      'quote-input': () => addItem('quotes', 'quote-input', 'quote-tags')
+    }
+    if (map[el.id]) map[el.id]()
+  })
+})
+
+async function saveLists() {
+  await window.mochi.updateLists(lists)
+}
+
+// ── Stats ──────────────────────────────────────────────────────────
+async function refreshStats() {
+  const stats = await window.mochi.getStats()
+  document.getElementById('stat-focus').textContent = stats.focusMinutes || 0
+  document.getElementById('stat-distract').textContent = stats.distractionMinutes || 0
+  document.getElementById('stat-streak').textContent = Math.round(stats.currentStreak || 0)
+  document.getElementById('stat-longest').textContent = Math.round(stats.longestStreak || 0)
+}
+
+// ── Settings ───────────────────────────────────────────────────────
+let startupEnabled = false
+
+async function toggleStartup() {
+  startupEnabled = !startupEnabled
+  document.getElementById('startup-toggle').classList.toggle('on', startupEnabled)
+  await window.mochi.toggleStartup(startupEnabled)
+}
+
+async function saveHours() {
+  const s = parseInt(document.getElementById('hours-start').value)
+  const e = parseInt(document.getElementById('hours-end').value)
+  await window.mochi.updateLists({ settings: { activeHoursStart: s, activeHoursEnd: e } })
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c])
+}
+</script>
+</body>
+</html>

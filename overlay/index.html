@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 160px;
+    height: 200px;
+    background: transparent;
+    overflow: hidden;
+    user-select: none;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  #container {
+    width: 160px;
+    height: 200px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 4px;
+  }
+
+  /* ── Speech bubble ────────────────────────────────────── */
+  #speech-bubble {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 140px;
+    background: #fffdf0;
+    border: 2px solid #222;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #222;
+    text-align: center;
+    image-rendering: pixelated;
+    box-shadow: 2px 2px 0 #222;
+    z-index: 10;
+    word-break: break-word;
+  }
+  #speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #222;
+  }
+  #speech-bubble.visible { display: block; }
+
+  /* ── Character (Mochi) ────────────────────────────────── */
+  #character-wrap {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  #mochi {
+    width: 120px;
+    height: 120px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    display: block;
+  }
+
+  /* Placeholder CSS sprite while art is pending */
+  #mochi.placeholder {
+    background: #FFB6C1;
+    border-radius: 50%;
+    transition: transform 0.1s;
+  }
+  #mochi.placeholder:hover { transform: scale(1.05); }
+
+  /* Mood animations on the placeholder */
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  @keyframes shake  { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+  @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  @keyframes nod    { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-5deg)} }
+  @keyframes zzz    { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+  #mochi.mood-happy     { animation: bounce 0.8s ease-in-out infinite; }
+  #mochi.mood-focused   { animation: pulse  2s ease-in-out infinite; filter: brightness(0.9); }
+  #mochi.mood-encouraging { animation: nod  1.2s ease-in-out infinite; }
+  #mochi.mood-sad       { filter: brightness(0.7) saturate(0.5); }
+  #mochi.mood-angry     { animation: shake 0.4s linear infinite; filter: hue-rotate(300deg); }
+  #mochi.mood-nagging   { animation: bounce 0.5s ease-in-out infinite; filter: hue-rotate(280deg); }
+  #mochi.mood-sleeping  { animation: zzz   2s ease-in-out infinite; filter: grayscale(0.4); }
+
+  /* Overdue badge */
+  #task-badge {
+    display: none;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #e74c3c;
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #fff;
+    z-index: 5;
+  }
+  #task-badge.visible { display: flex; }
+
+  /* ── Distraction timer ────────────────────────────────── */
+  #distraction-timer {
+    display: none;
+    font-size: 10px;
+    color: #e74c3c;
+    background: rgba(0,0,0,0.55);
+    border-radius: 10px;
+    padding: 2px 8px;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+    height: 18px;
+    align-items: center;
+  }
+  #distraction-timer.visible { display: flex; }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="speech-bubble" id="speech-bubble"></div>
+
+  <div id="character-wrap">
+    <div id="task-badge">0</div>
+    <img id="mochi" class="placeholder mood-encouraging" src="" alt="Mochi"
+         onerror="this.style.display='none'; document.getElementById('mochi-fallback').style.display='block'">
+    <div id="mochi-fallback" style="display:none;width:120px;height:120px;background:#FFB6C1;border-radius:50%;"></div>
+  </div>
+
+  <div id="distraction-timer">⏱ 0:00</div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let currentMood = 'encouraging'
+let isDragging = false
+let dragStart = { x: 0, y: 0, wx: 0, wy: 0 }
+let bubbleTimeout = null
+let spritesAvailable = false
+
+const mochi = document.getElementById('mochi')
+const fallback = document.getElementById('mochi-fallback')
+const bubble = document.getElementById('speech-bubble')
+const timer = document.getElementById('distraction-timer')
+const badge = document.getElementById('task-badge')
+const charWrap = document.getElementById('character-wrap')
+
+// ── Sprite detection ───────────────────────────────────────────────
+function tryLoadSprite(mood) {
+  const img = new Image()
+  img.onload = () => { spritesAvailable = true; applySprite(mood) }
+  img.onerror = () => { spritesAvailable = false }
+  img.src = `../assets/sprites/${mood}.png`
+}
+
+function applySprite(mood) {
+  if (spritesAvailable) {
+    mochi.src = `../assets/sprites/${mood}.png`
+    mochi.style.display = 'block'
+    fallback.style.display = 'none'
+  } else {
+    mochi.style.display = 'none'
+    fallback.style.display = 'block'
+  }
+  // Apply mood class to whichever element is visible for CSS animation
+  const el = spritesAvailable ? mochi : fallback
+  el.className = el.className.replace(/\bmood-\S+/g, '')
+  el.classList.add(`mood-${mood}`)
+  if (!spritesAvailable) el.classList.add('placeholder')
+}
+
+// ── Mood change ────────────────────────────────────────────────────
+function setMood(mood) {
+  currentMood = mood
+  tryLoadSprite(mood)
+
+  // Update placeholder fallback classes directly too
+  fallback.className = fallback.className.replace(/\bmood-\S+/g, '')
+  fallback.classList.add(`mood-${mood}`, 'placeholder')
+
+  // Update mochi img classes
+  mochi.className = mochi.className.replace(/\bmood-\S+/g, '')
+  mochi.classList.add(`mood-${mood}`)
+  if (!spritesAvailable) mochi.classList.add('placeholder')
+}
+
+// Initial sprite attempt
+tryLoadSprite('encouraging')
+
+// ── Speech bubble ──────────────────────────────────────────────────
+function showBubble(text, durationMs = 4000) {
+  if (bubbleTimeout) clearTimeout(bubbleTimeout)
+  bubble.textContent = text
+  bubble.classList.add('visible')
+  bubbleTimeout = setTimeout(() => bubble.classList.remove('visible'), durationMs)
+}
+
+// ── IPC events ────────────────────────────────────────────────────
+window.mochi.onMoodChanged((data) => {
+  setMood(data.mood || data)
+})
+
+window.mochi.onQuoteShow((text) => {
+  showBubble(text)
+})
+
+window.mochi.onTaskNagging((taskName) => {
+  showBubble(`⚠ "${taskName}" is overdue!`, 6000)
+})
+
+window.mochi.onDistractionTimer((seconds) => {
+  if (seconds <= 0) {
+    timer.classList.remove('visible')
+    return
+  }
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  timer.textContent = `⏱ ${m}:${String(s).padStart(2, '0')} wasted`
+  timer.classList.add('visible')
+})
+
+window.mochi.onTaskBadgeUpdate((count) => {
+  if (count > 0) {
+    badge.textContent = count > 9 ? '9+' : count
+    badge.classList.add('visible')
+  } else {
+    badge.classList.remove('visible')
+  }
+})
+
+// ── Character click ────────────────────────────────────────────────
+charWrap.addEventListener('click', (e) => {
+  if (!isDragging) window.mochi.characterClicked()
+})
+
+// ── Dragging ───────────────────────────────────────────────────────
+charWrap.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return
+  isDragging = false
+  dragStart = { x: e.screenX, y: e.screenY, wx: window.screenX, wy: window.screenY }
+  e.preventDefault()
+})
+
+document.addEventListener('mousemove', (e) => {
+  // Toggle click-through: pass clicks through transparent areas
+  const el = document.elementFromPoint(e.clientX, e.clientY)
+  const isOverChar = charWrap.contains(el) || el === charWrap
+  window.mochi.setIgnoreMouseEvents(!isOverChar)
+
+  // Drag
+  if (e.buttons === 1 && dragStart.x !== undefined) {
+    const dx = e.screenX - dragStart.x
+    const dy = e.screenY - dragStart.y
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      isDragging = true
+      const nx = dragStart.wx + dx
+      const ny = dragStart.wy + dy
+      window.moveTo(nx, ny)
+      window.mochi.dragPositionUpdate(nx, ny)
+    }
+  }
+})
+
+document.addEventListener('mouseup', () => {
+  setTimeout(() => { isDragging = false }, 50)
+})
+</script>
+</body>
+</html>
