@@ -301,9 +301,15 @@ let dragStart = {}
 let lastStatus = { state: 'idle' }
 
 // ── Custom sprite frames ──────────────────────────────────
-// Moods with no frames of their own borrow another mood's frames.
+// Moods with no frames of their own borrow another mood's frames
+// (resolved recursively, so a chain like focused->happy->encouraging works).
 const MOOD_FALLBACK = {
-  focused: 'happy', nagging: 'angry', sleeping: 'sad', celebrate: 'happy'
+  happy: 'encouraging',
+  focused: 'happy',
+  angry: 'sad',
+  nagging: 'angry',
+  sleeping: 'sad',
+  celebrate: 'happy'
 }
 // Per-mood frame duration (ms) when a mood is animated.
 const FRAME_MS = { encouraging: 220, happy: 160, focused: 220, sad: 280, angry: 120, nagging: 140, sleeping: 360, celebrate: 130 }
@@ -314,9 +320,13 @@ let spriteManifest = {}
 let frameTimer = null
 
 function framesFor(mood) {
-  if (spriteManifest[mood] && spriteManifest[mood].length) return spriteManifest[mood]
-  const fb = MOOD_FALLBACK[mood]
-  if (fb && spriteManifest[fb] && spriteManifest[fb].length) return spriteManifest[fb]
+  const seen = new Set()
+  let m = mood
+  while (m && !seen.has(m)) {
+    if (spriteManifest[m] && spriteManifest[m].length) return spriteManifest[m]
+    seen.add(m)
+    m = MOOD_FALLBACK[m]
+  }
   return null
 }
 

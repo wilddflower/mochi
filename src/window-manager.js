@@ -89,6 +89,17 @@ class WindowManager {
   getOverlayWindow() { return this.overlayWindow }
   getDashboardWindow() { return this.dashboardWindow }
 
+  // Show/hide Mochi entirely (the whole overlay window).
+  toggleOverlayVisibility() {
+    if (!this.overlayWindow || this.overlayWindow.isDestroyed()) return
+    if (this.overlayWindow.isVisible()) {
+      this.overlayWindow.hide()
+    } else {
+      this.overlayWindow.showInactive()
+      this.overlayWindow.setAlwaysOnTop(true, 'screen-saver')
+    }
+  }
+
   sendToOverlay(channel, data) {
     if (this.overlayWindow && !this.overlayWindow.isDestroyed()) {
       this.overlayWindow.webContents.send(channel, data)

@@ -110,9 +110,9 @@ app.whenReady().then(async () => {
 
   sessionTracker.checkDateRollover()
 
-  // Global hotkey: pop out the checklist panel
+  // Global hotkey: show/hide Mochi entirely
   const hotkeyOk = globalShortcut.register('CommandOrControl+M', () => {
-    windowManager.sendToOverlay('toggle-panel')
+    windowManager.toggleOverlayVisibility()
   })
   if (!hotkeyOk) console.error('[hotkey] Ctrl+M registration failed (already in use)')
 
