@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('mochi', {
   onTogglePanel: (cb) => ipcRenderer.on('toggle-panel', () => cb()),
   onOpenPanel: (cb) => ipcRenderer.on('open-panel', () => cb()),
   onSpriteManifest: (cb) => ipcRenderer.on('sprite-manifest', (_, manifest) => cb(manifest)),
+  onPlayFlop: (cb) => ipcRenderer.on('play-flop', () => cb()),
 
   // Send to main
   setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),

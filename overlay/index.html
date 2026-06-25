@@ -152,7 +152,7 @@
   /* ── Character (Mochi) ───────────────────────────────── */
   /* Portrait box so the (taller-than-wide) bunny isn't squished. */
   #character-wrap {
-    position: relative; width: 104px; height: 150px;
+    position: relative; width: 122px; height: 150px;
     cursor: pointer; flex-shrink: 0; align-self: flex-start; margin-left: 16px;
   }
   #mochi { width: 100%; height: 100%; display: block; }
@@ -337,21 +337,14 @@ function stopFrames() {
   if (frameTimer) { clearInterval(frameTimer); frameTimer = null }
 }
 
-function playFrames(mood, frames) {
+// Show a mood as a single static pose (frame 0) with a gentle position bob.
+// Frames never loop on their own — the ear flop is a one-shot (see playFlop).
+function showStatic(mood, frames) {
   stopFrames()
   mochiImg.className = ''
   mochiImg.src = frames[0]
-  if (frames.length === 1) {
-    const a = POS_ANIM[mood]
-    if (a) mochiImg.classList.add(a)
-  } else {
-    let i = 0
-    const ms = FRAME_MS[mood] || 180
-    frameTimer = setInterval(() => {
-      i = (i + 1) % frames.length
-      mochiImg.src = frames[i]
-    }, ms)
-  }
+  const a = POS_ANIM[mood]
+  if (a) mochiImg.classList.add(a)
 }
 
 function setMood(mood) {
@@ -359,7 +352,7 @@ function setMood(mood) {
   const frames = framesFor(mood)
   if (frames) {
     charWrap.classList.add('has-frames')
-    playFrames(mood, frames)
+    showStatic(mood, frames)
   } else {
     // Fallback: built-in SVG bunny
     charWrap.classList.remove('has-frames')
@@ -369,6 +362,26 @@ function setMood(mood) {
     mochiEl.classList.add('mood-' + svgMood)
   }
   if (mood !== 'sad' && mood !== 'angry') timer.classList.remove('visible')
+}
+
+// One-shot ear flop (both-up → flop → both-flopped → flop → both-up).
+// Only triggered by a click or Ctrl+M show, and only while she's in a calm pose.
+const FLOP_MS = 240
+function playFlop() {
+  const flop = spriteManifest['encouraging']
+  if (!flop || flop.length < 2) return
+  if (framesFor(currentMood) !== flop) return  // skip when sad/angry/celebrating
+  stopFrames()
+  const order = flop.map((_, i) => i)
+  const seq = order.concat(order.slice(0, -1).reverse()) // out and back
+  let i = 0
+  mochiImg.className = ''
+  mochiImg.src = flop[0]
+  frameTimer = setInterval(() => {
+    i++
+    if (i >= seq.length) { stopFrames(); mochiImg.src = flop[0]; return }
+    mochiImg.src = flop[seq[i]]
+  }, FLOP_MS)
 }
 
 function showBubble(text, ms = 4500) {
@@ -473,7 +486,12 @@ window.mochi.onSessionStatus(status => renderStatus(status))
 window.mochi.onTodayList(items => renderToday(items))
 window.mochi.onTogglePanel(() => togglePanel())
 window.mochi.onOpenPanel(() => openPanel())
-window.mochi.onSpriteManifest(manifest => { spriteManifest = manifest || {}; setMood(currentMood) })
+window.mochi.onSpriteManifest(manifest => {
+  spriteManifest = manifest || {}
+  setMood(currentMood)
+  setTimeout(playFlop, 700) // greeting flop once frames are loaded
+})
+window.mochi.onPlayFlop(() => playFlop()) // Ctrl+M called her back up
 
 window.mochi.onDistractionTimer(seconds => {
   if (seconds <= 0) { timer.classList.remove('visible'); return }
@@ -487,8 +505,12 @@ window.mochi.onTaskBadgeUpdate(count => {
   else badge.classList.remove('visible')
 })
 
-// ── Character click → toggle panel ──
-charWrap.addEventListener('click', () => { if (!isDragging) togglePanel() })
+// ── Character click → flop ears + toggle panel ──
+charWrap.addEventListener('click', () => {
+  if (isDragging) return
+  playFlop()
+  togglePanel()
+})
 
 // ── Dragging Mochi ──
 charWrap.addEventListener('mousedown', e => {

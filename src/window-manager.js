@@ -97,6 +97,8 @@ class WindowManager {
     } else {
       this.overlayWindow.showInactive()
       this.overlayWindow.setAlwaysOnTop(true, 'screen-saver')
+      // Greet with an ear flop when called back up
+      this.sendToOverlay('play-flop')
     }
   }
 
