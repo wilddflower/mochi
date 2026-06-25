@@ -156,6 +156,22 @@
   }
   #mochi { width: 120px; height: 120px; display: block; }
 
+  /* Custom sprite frames (Pavni's bunny). Hidden until frames are loaded. */
+  #mochi-img {
+    width: 120px; height: 120px; display: none;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    transform-origin: center bottom;
+  }
+  #character-wrap.has-frames #mochi { display: none; }
+  #character-wrap.has-frames #mochi-img { display: block; }
+
+  /* Position animations applied to single-frame sprites for a little life */
+  #mochi-img.anim-bounce { animation: bounce 0.8s ease-in-out infinite; }
+  #mochi-img.anim-shake  { animation: shake 0.4s linear infinite; }
+  #mochi-img.anim-nod    { animation: nod 1.2s ease-in-out infinite; }
+  #mochi-img.anim-float  { animation: float 2.5s ease-in-out infinite; }
+
+  @keyframes float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
   @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
   @keyframes shake  { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
   @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.8} }
@@ -225,6 +241,7 @@
   <!-- Character -->
   <div id="character-wrap">
     <div id="task-badge">0</div>
+    <img id="mochi-img" alt="">
     <svg id="mochi" class="mood-encouraging" viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
       <rect x="28" y="5" width="20" height="44" rx="10" fill="#f5e6e6" stroke="#444" stroke-width="2"/>
       <rect x="32" y="9" width="12" height="34" rx="6" fill="#ffb6c1"/>
@@ -262,6 +279,7 @@
 
 <script>
 const mochiEl = document.getElementById('mochi')
+const mochiImg = document.getElementById('mochi-img')
 const bubble = document.getElementById('speech-bubble')
 const timer = document.getElementById('distraction-timer')
 const badge = document.getElementById('task-badge')
@@ -282,10 +300,61 @@ let isDragging = false
 let dragStart = {}
 let lastStatus = { state: 'idle' }
 
+// ── Custom sprite frames ──────────────────────────────────
+// Moods with no frames of their own borrow another mood's frames.
+const MOOD_FALLBACK = {
+  focused: 'happy', nagging: 'angry', sleeping: 'sad', celebrate: 'happy'
+}
+// Per-mood frame duration (ms) when a mood is animated.
+const FRAME_MS = { encouraging: 220, happy: 160, focused: 220, sad: 280, angry: 120, nagging: 140, sleeping: 360, celebrate: 130 }
+// Gentle position animation for single-frame sprites.
+const POS_ANIM = { happy:'anim-bounce', focused:'anim-float', encouraging:'anim-nod', sad:'anim-nod', angry:'anim-shake', nagging:'anim-shake', sleeping:'anim-float', celebrate:'anim-bounce' }
+
+let spriteManifest = {}
+let frameTimer = null
+
+function framesFor(mood) {
+  if (spriteManifest[mood] && spriteManifest[mood].length) return spriteManifest[mood]
+  const fb = MOOD_FALLBACK[mood]
+  if (fb && spriteManifest[fb] && spriteManifest[fb].length) return spriteManifest[fb]
+  return null
+}
+
+function stopFrames() {
+  if (frameTimer) { clearInterval(frameTimer); frameTimer = null }
+}
+
+function playFrames(mood, frames) {
+  stopFrames()
+  mochiImg.className = ''
+  mochiImg.src = frames[0]
+  if (frames.length === 1) {
+    const a = POS_ANIM[mood]
+    if (a) mochiImg.classList.add(a)
+  } else {
+    let i = 0
+    const ms = FRAME_MS[mood] || 180
+    frameTimer = setInterval(() => {
+      i = (i + 1) % frames.length
+      mochiImg.src = frames[i]
+    }, ms)
+  }
+}
+
 function setMood(mood) {
   currentMood = mood
-  MOODS.forEach(m => mochiEl.classList.remove('mood-' + m))
-  mochiEl.classList.add('mood-' + mood)
+  const frames = framesFor(mood)
+  if (frames) {
+    charWrap.classList.add('has-frames')
+    playFrames(mood, frames)
+  } else {
+    // Fallback: built-in SVG bunny
+    charWrap.classList.remove('has-frames')
+    stopFrames()
+    const svgMood = MOODS.includes(mood) ? mood : 'happy'
+    MOODS.forEach(m => mochiEl.classList.remove('mood-' + m))
+    mochiEl.classList.add('mood-' + svgMood)
+  }
   if (mood !== 'sad' && mood !== 'angry') timer.classList.remove('visible')
 }
 
@@ -390,6 +459,7 @@ window.mochi.onSessionStatus(status => renderStatus(status))
 window.mochi.onTodayList(items => renderToday(items))
 window.mochi.onTogglePanel(() => togglePanel())
 window.mochi.onOpenPanel(() => openPanel())
+window.mochi.onSpriteManifest(manifest => { spriteManifest = manifest || {}; setMood(currentMood) })
 
 window.mochi.onDistractionTimer(seconds => {
   if (seconds <= 0) { timer.classList.remove('visible'); return }

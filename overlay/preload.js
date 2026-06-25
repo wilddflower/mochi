@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('mochi', {
   onTodayList: (cb) => ipcRenderer.on('today-list', (_, items) => cb(items)),
   onTogglePanel: (cb) => ipcRenderer.on('toggle-panel', () => cb()),
   onOpenPanel: (cb) => ipcRenderer.on('open-panel', () => cb()),
+  onSpriteManifest: (cb) => ipcRenderer.on('sprite-manifest', (_, manifest) => cb(manifest)),
 
   // Send to main
   setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),

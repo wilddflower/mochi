@@ -9,6 +9,7 @@ const SessionManager = require('./src/session-manager')
 const TaskManager = require('./src/task-manager')
 const QuoteEngine = require('./src/quote-engine')
 const AutoLaunch = require('./src/auto-launch')
+const { buildSpriteManifest } = require('./src/sprite-manifest')
 
 let store, windowManager, trayManager, windowMonitor, moodEngine
 let sessionTracker, sessionManager, taskManager, quoteEngine
@@ -136,6 +137,7 @@ function setupIpcHandlers() {
   })
 
   ipcMain.on('overlay-request-init', () => {
+    windowManager.sendToOverlay('sprite-manifest', buildSpriteManifest())
     windowManager.sendToOverlay('session-status', sessionManager.getStatus())
     pushTodayList()
     windowManager.sendToOverlay('open-panel')
@@ -164,10 +166,12 @@ function setupIpcHandlers() {
 
     if (item.done) {
       const remaining = getTodayList().filter(t => !t.done).length
-      windowManager.sendToOverlay('mood-changed', { mood: 'happy', prevMood: 'happy' })
       if (remaining === 0) {
+        // Whole list cleared → celebration animation
+        windowManager.sendToOverlay('mood-changed', { mood: 'celebrate', prevMood: 'happy' })
         windowManager.sendToOverlay('quote-show', 'ALL DONE! you legend 🎉')
       } else {
+        windowManager.sendToOverlay('mood-changed', { mood: 'happy', prevMood: 'happy' })
         const quote = quoteEngine.getQuote('task-complete')
         windowManager.sendToOverlay('quote-show', quote || 'nice one! ✓')
       }

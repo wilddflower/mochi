@@ -1,0 +1,1 @@
+﻿const fs=require('fs');fs.writeFileSync('C:/Users/Pavni/AppData/Local/Temp/etest2.json',JSON.stringify({resolved:require.resolve('electron'),type:process.type,mll:process.moduleLoadList.slice(0,10)}));
