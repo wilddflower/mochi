@@ -1,6 +1,6 @@
 {
   "name": "mochi",
-  "version": "1.0.0.0",
+  "version": "1.0.0",
   "description": "Personal Windows desktop focus companion — a pixel-art bunny who keeps you on task",
   "main": "main.js",
   "scripts": {
