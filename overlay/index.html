@@ -416,7 +416,8 @@ function renderControls(status) {
 
 function renderStatus(status) {
   lastStatus = status
-  workClockEl.textContent = status.state === 'working' ? fmtClock(status.workElapsedMs) : '—'
+  // Cumulative work time for the day (keeps counting across breaks; frozen during a break).
+  workClockEl.textContent = fmtClock(status.workTodayMs || 0)
   breakLeftEl.textContent = fmtMin(status.breakRemainingMin)
 
   if (status.state === 'idle') {
@@ -495,12 +496,18 @@ charWrap.addEventListener('mousedown', e => {
   isDragging = false
   dragStart = { x: e.screenX, y: e.screenY, wx: window.screenX, wy: window.screenY }
 })
+let lastIgnore = null
 document.addEventListener('mousemove', e => {
-  // Toggle click-through: solid only over Mochi or the open panel
+  // Toggle click-through: solid only over Mochi or the open panel.
+  // Only send the IPC when the value actually changes (avoids per-move spam).
   const el = document.elementFromPoint(e.clientX, e.clientY)
   const overChar = charWrap.contains(el)
   const overPanel = panel.classList.contains('open') && panel.contains(el)
-  window.mochi.setIgnoreMouseEvents(!(overChar || overPanel))
+  const ignore = !(overChar || overPanel)
+  if (ignore !== lastIgnore) {
+    lastIgnore = ignore
+    window.mochi.setIgnoreMouseEvents(ignore)
+  }
 
   if (e.buttons === 1 && dragStart.x !== undefined) {
     const dx = e.screenX - dragStart.x, dy = e.screenY - dragStart.y

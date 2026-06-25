@@ -14,7 +14,6 @@ const { buildSpriteManifest } = require('./src/sprite-manifest')
 let store, windowManager, trayManager, windowMonitor, moodEngine
 let sessionTracker, sessionManager, taskManager, quoteEngine
 
-const TODAY_KEY = () => new Date().toISOString().slice(0, 10)
 
 app.whenReady().then(async () => {
   store = new Store()
@@ -70,7 +69,7 @@ app.whenReady().then(async () => {
     moodEngine.setSessionState(status.state)
     windowManager.sendToOverlay('session-status', status)
 
-    if (status.state === 'working') {
+    if (status.state === 'working' && !status.forced) {
       const quote = quoteEngine.getQuote('start')
       windowManager.sendToOverlay('quote-show', quote || "let's lock in! 💪")
     } else if (status.state === 'break') {
@@ -88,7 +87,9 @@ app.whenReady().then(async () => {
   })
 
   sessionManager.on('break-exhausted', () => {
-    windowManager.sendToOverlay('mood-changed', { mood: 'angry', prevMood: 'happy' })
+    // Fires right after the forced state-changed→working above; flashMood shows
+    // the angry reaction over the working mood, then reverts to the real mood.
+    flashMood('angry', 4500)
     windowManager.sendToOverlay('quote-show', "break's over — you used all 4 hours 😤")
   })
 
@@ -122,7 +123,7 @@ app.whenReady().then(async () => {
 // ── Today list helpers ───────────────────────────────────────────────
 function getTodayList() {
   const all = store.get('todayList') || []
-  return all.filter(t => t.date === TODAY_KEY())
+  return all.filter(t => t.date === store.getTodayKey())
 }
 
 function pushTodayList() {
@@ -158,8 +159,10 @@ function setupIpcHandlers() {
 
   // ── Today list ──
   ipcMain.on('today-add', (_, text) => {
-    const all = store.get('todayList') || []
-    all.push({ id: Date.now(), text: String(text).trim(), done: false, date: TODAY_KEY() })
+    const today = store.getTodayKey()
+    // Prune previous days' items so the list can't grow unbounded.
+    const all = (store.get('todayList') || []).filter(t => t.date === today)
+    all.push({ id: Date.now(), text: String(text).trim(), done: false, date: today })
     store.set('todayList', all)
     pushTodayList()
   })

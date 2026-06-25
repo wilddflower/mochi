@@ -63,7 +63,12 @@ class MoodEngine extends EventEmitter {
       if (prev !== 'distraction') this._distractionStartTime = Date.now()
       this._focusStartTime = null
     } else if (classification === 'productive') {
-      if (prev !== 'productive') this._focusStartTime = Date.now()
+      if (prev !== 'productive') {
+        // Fresh focus streak → restart milestone tracking
+        this._focusStartTime = Date.now()
+        this._nextMilestone = MILESTONE_INTERVALS[0]
+        this._milestoneMinutes = 0
+      }
       if (this._distractionStartTime) this.emit('distraction-timer', 0)
       this._distractionStartTime = null
     } else {
@@ -78,10 +83,6 @@ class MoodEngine extends EventEmitter {
 
   setNagging(hasOverdue) {
     this._hasNagging = hasOverdue
-    this._recalculateMood()
-  }
-
-  recalculate() {
     this._recalculateMood()
   }
 

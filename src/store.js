@@ -59,6 +59,7 @@ const DEFAULTS = {
   tasks: [],
   todayList: [],          // simple daily checklist: { id, text, done, date }
   dailyBreak: {},         // { date: 'YYYY-MM-DD', minutesUsed: number }
+  dailyWork: {},          // { date: 'YYYY-MM-DD', minutesUsed: number } — cumulative work clock
   settings: {
     activeHoursStart: 9,
     activeHoursEnd: 22,
