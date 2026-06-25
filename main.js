@@ -129,6 +129,14 @@ function pushTodayList() {
   windowManager.sendToOverlay('today-list', getTodayList())
 }
 
+// Briefly show a celebration mood, then snap back to Mochi's real current mood.
+function flashMood(mood, ms = 4000) {
+  windowManager.sendToOverlay('mood-changed', { mood })
+  setTimeout(() => {
+    windowManager.sendToOverlay('mood-changed', { mood: moodEngine.getCurrentMood() })
+  }, ms)
+}
+
 function setupIpcHandlers() {
   // ── Overlay basics ──
   ipcMain.on('set-ignore-mouse-events', (_, ignore) => {
@@ -167,11 +175,11 @@ function setupIpcHandlers() {
     if (item.done) {
       const remaining = getTodayList().filter(t => !t.done).length
       if (remaining === 0) {
-        // Whole list cleared → celebration animation
-        windowManager.sendToOverlay('mood-changed', { mood: 'celebrate', prevMood: 'happy' })
+        // Whole list cleared → celebration animation (then back to real mood)
+        flashMood('celebrate', 5000)
         windowManager.sendToOverlay('quote-show', 'ALL DONE! you legend 🎉')
       } else {
-        windowManager.sendToOverlay('mood-changed', { mood: 'happy', prevMood: 'happy' })
+        flashMood('happy', 3000)
         const quote = quoteEngine.getQuote('task-complete')
         windowManager.sendToOverlay('quote-show', quote || 'nice one! ✓')
       }
@@ -197,8 +205,7 @@ function setupIpcHandlers() {
     if (ok) {
       const quote = quoteEngine.getQuote('task-complete')
       if (quote) windowManager.sendToOverlay('quote-show', quote)
-      windowManager.sendToOverlay('mood-changed', { mood: 'happy', prevMood: 'happy' })
-      setTimeout(() => moodEngine.recalculate(), 3000)
+      flashMood('happy', 3000)
     }
     windowManager.sendToDashboard('tasks-update', taskManager.getTasks())
     return ok

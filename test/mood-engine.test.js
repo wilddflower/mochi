@@ -67,6 +67,23 @@ describe('MoodEngine — state transitions', () => {
     expect(engine.getCurrentMood()).toBe('angry')
   })
 
+  test('auto-escalates sad → angry from the tick (no window change)', () => {
+    engine.onWindowChanged({ processName: 'Discord', windowTitle: 'Discord' })
+    expect(engine.getCurrentMood()).toBe('sad')
+
+    // Advance past 5 min so the 1s tick recalculates without any window change
+    jest.advanceTimersByTime(5 * 60 * 1000 + 1000)
+    expect(engine.getCurrentMood()).toBe('angry')
+  })
+
+  test('auto-escalates happy → focused from the tick (no window change)', () => {
+    engine.onWindowChanged({ processName: 'Code', windowTitle: 'main.js' })
+    expect(engine.getCurrentMood()).toBe('happy')
+
+    jest.advanceTimersByTime(10 * 60 * 1000 + 1000)
+    expect(engine.getCurrentMood()).toBe('focused')
+  })
+
   test('escalates from happy to focused after 10 minutes', () => {
     engine.onWindowChanged({ processName: 'Code', windowTitle: 'main.js' })
     expect(engine.getCurrentMood()).toBe('happy')

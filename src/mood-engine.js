@@ -134,13 +134,16 @@ class MoodEngine extends EventEmitter {
 
   _startDistractionTick() {
     this._distractionTimerTick = setInterval(() => {
-      if (this.paused) return
+      if (this.paused || this._sessionState !== 'working') return
+
       if (this._lastClassification === 'distraction' && this._distractionStartTime) {
         const elapsed = Math.floor((Date.now() - this._distractionStartTime) / 1000)
         this.emit('distraction-timer', elapsed)
+        // Escalate sad → angry at the 5-min mark even with no window change.
+        this._recalculateMood()
       }
 
-      // Focus milestones
+      // Focus milestones + happy → focused escalation
       if (this._lastClassification === 'productive' && this._focusStartTime) {
         const mins = Math.floor((Date.now() - this._focusStartTime) / 60000)
         if (mins >= this._nextMilestone) {
@@ -148,6 +151,7 @@ class MoodEngine extends EventEmitter {
           this._nextMilestone = MILESTONE_INTERVALS.find(m => m > mins) || (mins + 15)
           this.emit('milestone', `focus-${mins}`)
         }
+        this._recalculateMood()
       }
     }, 1000)
   }
