@@ -4,268 +4,665 @@
 <meta charset="utf-8">
 <title>Mochi Dashboard</title>
 <style>
-  :root {
-    --pink: #ffb6c1;
-    --pink-dark: #e87d92;
-    --bg: #fdf6f8;
-    --card: #fff;
-    --border: #e8d0d8;
-    --text: #2d2d2d;
-    --muted: #888;
-    --danger: #e74c3c;
-    --success: #2ecc71;
-    --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Segoe UI',sans-serif; background:var(--bg); color:var(--text); font-size:13px; }
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Pixelify+Sans:wght@500;700&display=swap');
 
-  /* ── Header ── */
-  header {
-    background: linear-gradient(135deg, #ffb6c1, #ffd4dc);
-    padding: 16px 20px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .header-top { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-  .header-top h1 { font-size:18px; font-weight:700; color:#a0294a; }
-  .header-top .emoji { font-size:22px; }
+/* ========== Soft Focus — Mochi dashboard ========== */
+:root{
+  --pink:#ffb6c1;
+  --pink-deep:#f29cbe;
+  --pink-deeper:#e87d92;
+  --pink-darkest:#a0294a;
+  --page:#fdf6f8;
+  --card:#ffffff;
+  --border:#e8d0d8;
+  --mint:#6ec79a;
+  --mint-2:#7ccfa3;
+  --mint-strong:#2ecc71;
+  --amber:#f6b73c;
+  --red:#e74c3c;
+  --plum:#443d4c;
+  --plum-body:#5b4a63;
+  --muted:#9a93a6;
+  --soft-empty:#f6dde6;     /* soft-pink empty segment */
+  --shadow:0 8px 22px rgba(160,41,74,.06);
+  --shadow-sm:0 4px 12px rgba(160,41,74,.05);
+  --radius-lg:22px;
+  --radius-md:18px;
+  --radius-sm:14px;
+}
 
-  /* ── Tabs ── */
-  .tabs { display:flex; gap:2px; }
-  .tab {
-    padding:8px 16px;
-    border:none; background:rgba(255,255,255,0.4);
-    border-radius:6px 6px 0 0;
-    cursor:pointer; font-size:12px; font-weight:600;
-    color:#a0294a; transition:background 0.15s;
-  }
-  .tab:hover { background:rgba(255,255,255,0.65); }
-  .tab.active { background:#fff; color:#a0294a; }
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Nunito',system-ui,-apple-system,sans-serif;
+  background:var(--page);
+  color:var(--plum-body);
+  font-weight:600;
+  -webkit-font-smoothing:antialiased;
+  font-size:15px;
+  line-height:1.4;
+}
+.app{
+  max-width:560px;
+  margin:0 auto;
+  padding:18px 16px 36px;
+}
 
-  /* ── Content area ── */
-  .content { padding:20px; }
-  .panel { display:none; }
-  .panel.active { display:block; }
+/* Pixel font helper — gamified numbers only */
+.pixel{font-family:'Pixelify Sans',monospace;font-weight:700;letter-spacing:.5px;}
 
-  /* ── Cards / sections ── */
-  .card {
-    background:var(--card); border:1px solid var(--border);
-    border-radius:8px; padding:16px; margin-bottom:14px;
-    box-shadow:var(--shadow);
-  }
-  .card h3 { font-size:12px; font-weight:700; text-transform:uppercase;
-              letter-spacing:0.5px; color:var(--muted); margin-bottom:10px; }
+/* ========== Header band ========== */
+.header{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:14px 16px;
+  margin-bottom:14px;
+}
+.bunny{
+  width:46px;height:46px;flex:0 0 46px;
+  border-radius:14px;
+  background:linear-gradient(160deg,#fff0f5,#ffe1ea);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.bunny svg{display:block;}
+.header-text{flex:1 1 auto;min-width:0;}
+.greeting{
+  font-size:18px;font-weight:800;color:var(--plum);
+  line-height:1.15;
+}
+.subtitle{
+  font-size:12.5px;color:var(--muted);font-weight:700;margin-top:1px;
+}
+.header-chips{
+  display:flex;align-items:center;gap:8px;flex:0 0 auto;
+}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:6px 11px;
+  box-shadow:var(--shadow-sm);
+  white-space:nowrap;
+}
+.chip .chip-ico{font-size:14px;line-height:1;}
+.chip .chip-num{
+  font-size:17px;color:var(--plum);line-height:1;
+}
+.chip .chip-label{
+  font-size:10px;font-weight:800;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.4px;line-height:1;
+}
+.chip-streak .chip-ico{filter:saturate(1.1);}
+.chip-xp{background:linear-gradient(180deg,#fff,#fff5f8);}
+.chip-level{padding:6px 9px;}
+.chip-level .chip-num{font-size:14px;}
 
-  /* ── Form inputs ── */
-  .field-row { display:flex; gap:8px; margin-bottom:10px; }
-  input[type=text], input[type=number], select {
-    border:1px solid var(--border); border-radius:6px;
-    padding:6px 10px; font-size:13px; outline:none;
-    background:#fff; color:var(--text);
-    transition:border-color 0.15s;
-  }
-  input[type=text]:focus, input[type=number]:focus { border-color:var(--pink-dark); }
-  input[type=text].flex { flex:1; }
-  input[type=number] { width:80px; }
+/* ========== Tab bar ========== */
+.tabs{
+  display:flex;gap:7px;
+  margin-bottom:14px;
+  overflow-x:auto;
+  padding-bottom:2px;
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{
+  flex:1 1 auto;
+  appearance:none;border:1px solid var(--border);
+  background:var(--card);
+  color:var(--plum-body);
+  font-family:inherit;font-weight:800;font-size:13px;
+  padding:9px 12px;border-radius:999px;
+  cursor:pointer;white-space:nowrap;
+  transition:background .15s,color .15s,box-shadow .15s,transform .05s;
+}
+.tab:hover{background:#fff0f4;}
+.tab:active{transform:translateY(1px);}
+.tab.active{
+  background:var(--pink);
+  color:var(--pink-darkest);
+  border-color:var(--pink);
+  box-shadow:0 6px 14px rgba(255,182,193,.45);
+}
 
-  button {
-    padding:6px 14px; border:none; border-radius:6px;
-    font-size:12px; font-weight:600; cursor:pointer;
-    transition:opacity 0.15s;
-  }
-  button:hover { opacity:0.85; }
-  .btn-primary { background:var(--pink-dark); color:#fff; }
-  .btn-danger  { background:var(--danger); color:#fff; padding:3px 8px; font-size:11px; }
-  .btn-success { background:var(--success); color:#fff; padding:3px 8px; font-size:11px; }
-  .btn-ghost   { background:transparent; border:1px solid var(--border); color:var(--muted); }
+/* ========== Panels & cards ========== */
+.panel{display:none;}
+.panel.active{display:block;animation:fade .2s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 
-  /* ── Tag/pill list ── */
-  .tag-list { display:flex; flex-wrap:wrap; gap:6px; min-height:32px; }
-  .tag {
-    display:flex; align-items:center; gap:4px;
-    background:var(--bg); border:1px solid var(--border);
-    border-radius:99px; padding:3px 10px;
-    font-size:12px;
-  }
-  .tag .rm { cursor:pointer; color:var(--muted); font-size:14px; line-height:1; }
-  .tag .rm:hover { color:var(--danger); }
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow);
+  padding:16px;
+  margin-bottom:14px;
+}
+.section-title{
+  font-size:15px;font-weight:800;color:var(--plum);
+  margin:0 0 3px;letter-spacing:.1px;
+}
+.section-sub{font-size:12px;color:var(--muted);font-weight:700;margin:0;}
 
-  /* ── Task list ── */
-  .task-item {
-    display:flex; align-items:center; gap:8px;
-    padding:8px 10px; border:1px solid var(--border);
-    border-radius:6px; margin-bottom:6px; background:var(--card);
-  }
-  .task-item.overdue { border-color:#f1948a; background:#fff5f5; }
-  .task-item.done { opacity:0.5; }
-  .task-name { flex:1; font-size:13px; }
-  .task-deadline { font-size:11px; color:var(--muted); }
-  .task-deadline.overdue-label { color:var(--danger); font-weight:600; }
-  .task-actions { display:flex; gap:4px; flex-shrink:0; }
-  .empty-state { color:var(--muted); font-style:italic; padding:10px 0; text-align:center; }
+/* ========== Hero: Today's Focus (PulseBoard graft) ========== */
+.hero{
+  background:linear-gradient(180deg,#ffffff, #fffafc);
+  border:1px solid var(--border);
+}
+.hero-head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px;
+}
+.hero-count{font-size:12px;font-weight:800;color:var(--plum);}
+.hero-count b{font-family:'Pixelify Sans',monospace;font-size:15px;}
 
-  /* ── Stats ── */
-  .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .stat-box { text-align:center; padding:14px 10px; background:var(--bg); border-radius:8px; border:1px solid var(--border); }
-  .stat-val { font-size:28px; font-weight:700; color:var(--pink-dark); }
-  .stat-label { font-size:11px; color:var(--muted); margin-top:2px; }
+/* segmented bar */
+.seg-bar{
+  display:flex;gap:5px;margin:2px 0 10px;
+}
+.seg{
+  flex:1 1 0;height:9px;border-radius:6px;
+  background:var(--soft-empty);
+  transition:background .2s;
+}
+.seg.filled{
+  background:linear-gradient(90deg,var(--mint),var(--mint-2));
+}
+.momentum{
+  font-size:13px;font-weight:800;color:var(--plum);
+  display:flex;align-items:center;gap:7px;
+}
+.momentum .spark{font-size:14px;}
 
-  /* ── Settings row ── */
-  .setting-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); }
-  .setting-row:last-child { border-bottom:none; }
-  .setting-label { font-size:13px; }
-  .setting-desc { font-size:11px; color:var(--muted); margin-top:2px; }
-  .toggle {
-    width:38px; height:20px; background:#ccc; border-radius:10px;
-    cursor:pointer; position:relative; transition:background 0.2s; flex-shrink:0;
-  }
-  .toggle::after {
-    content:''; position:absolute; width:16px; height:16px;
-    background:#fff; border-radius:50%; top:2px; left:2px;
-    transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.3);
-  }
-  .toggle.on { background:var(--pink-dark); }
-  .toggle.on::after { transform:translateX(18px); }
+/* today's wins — mint check-chip row (Bounce graft) */
+.wins{
+  display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;
+  padding-top:12px;border-top:1px dashed var(--border);
+}
+.win-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:#eafaf1;border:1px solid #cdeeda;
+  color:#1f8c54;border-radius:999px;
+  padding:5px 10px;font-size:11.5px;font-weight:800;
+}
+.win-chip .wc{
+  width:15px;height:15px;border-radius:50%;
+  background:var(--mint-strong);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:9px;
+}
+
+/* ========== Task list ========== */
+#task-list{display:flex;flex-direction:column;gap:11px;margin-bottom:14px;}
+
+.task{
+  position:relative;
+  display:flex;align-items:flex-start;gap:12px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-sm);
+  padding:14px 14px 14px 18px;
+  overflow:hidden;
+  transition:box-shadow .15s,transform .05s;
+}
+.task:hover{box-shadow:var(--shadow);}
+/* color-coded left accent bar — urgency only */
+.task::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:6px;
+  background:var(--mint);
+}
+.task.urg-overdue::before{background:var(--red);}
+.task.urg-soon::before{background:var(--amber);}
+.task.urg-ok::before{background:var(--mint);}
+
+/* circular check token */
+.check{
+  flex:0 0 28px;width:28px;height:28px;margin-top:1px;
+  border-radius:50%;
+  border:2.5px solid var(--border);
+  background:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  color:transparent;font-size:14px;
+  transition:background .15s,border-color .15s,transform .12s,color .15s;
+}
+.check:hover{border-color:var(--mint);background:#f1fbf5;}
+.check:active{transform:scale(.9);}
+
+.task-body{flex:1 1 auto;min-width:0;}
+.task-top{display:flex;align-items:center;gap:8px;}
+.task-emoji{font-size:16px;line-height:1;flex:0 0 auto;}
+.task-name{
+  font-size:15px;font-weight:800;color:var(--plum);
+  line-height:1.25;word-break:break-word;
+}
+.task-meta{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:6px;font-size:12px;font-weight:700;color:var(--plum-body);
+}
+.meta-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--mint);flex:0 0 auto;
+}
+.urg-overdue .meta-dot{background:var(--red);}
+.urg-soon .meta-dot{background:var(--amber);}
+.urg-ok .meta-dot{background:var(--mint);}
+.meta-sep{color:var(--border);}
+.meta-deadline.is-overdue{color:var(--red);font-weight:800;}
+.meta-duration{color:var(--muted);}
+
+/* +XP pill (Bounce graft) — neutral pink, never urgency colors */
+.xp-pill{
+  display:inline-flex;align-items:center;gap:3px;
+  background:#fff0f5;border:1px solid var(--border);
+  color:var(--pink-darkest);
+  border-radius:999px;padding:2px 8px;
+  font-size:10.5px;font-weight:800;
+}
+
+.task-actions{flex:0 0 auto;display:flex;align-items:flex-start;}
+.menu-btn{
+  appearance:none;border:none;background:transparent;
+  color:var(--muted);cursor:pointer;
+  width:28px;height:28px;border-radius:9px;
+  font-size:17px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s;
+}
+.menu-btn:hover{background:#fbeef3;color:var(--plum);}
+
+/* completed reward state */
+.task.done{opacity:.85;}
+.task.done::before{background:var(--mint-strong)!important;}
+.task.done .check{
+  background:var(--mint-strong);border-color:var(--mint-strong);color:#fff;
+}
+.task.done .task-name{
+  text-decoration:line-through;color:var(--muted);font-weight:700;
+}
+.task.done .xp-pill{
+  background:#eafaf1;border-color:#cdeeda;color:#1f8c54;
+}
+
+/* empty state */
+.empty{
+  text-align:center;padding:26px 16px;color:var(--muted);
+  font-weight:700;font-size:13.5px;
+}
+.empty .big{font-size:30px;display:block;margin-bottom:6px;}
+
+/* ========== Add task row ========== */
+.add-card{padding:14px;}
+.add-row{display:flex;gap:9px;align-items:stretch;}
+.add-row .field-name{flex:1 1 auto;}
+.add-row .field-dur{flex:0 0 92px;}
+.inp{
+  width:100%;
+  font-family:inherit;font-size:14px;font-weight:700;color:var(--plum);
+  background:#fbf3f6;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:11px 13px;
+  outline:none;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.inp::placeholder{color:var(--muted);font-weight:700;}
+.inp:focus{
+  background:#fff;border-color:var(--pink-deep);
+  box-shadow:0 0 0 3px rgba(242,156,190,.18);
+}
+
+/* pink primary pill CTA */
+.btn-primary{
+  appearance:none;border:none;cursor:pointer;
+  font-family:inherit;font-weight:800;font-size:14px;
+  color:var(--pink-darkest);
+  background:var(--pink);
+  border-radius:999px;
+  padding:11px 20px;
+  box-shadow:0 6px 14px rgba(255,182,193,.5);
+  transition:filter .15s,transform .05s;
+  white-space:nowrap;
+}
+.btn-primary:hover{filter:brightness(1.03);}
+.btn-primary:active{transform:translateY(1px);}
+.btn-primary.full{width:100%;margin-top:10px;}
+
+/* ========== Tag inputs (apps / sites / quotes) ========== */
+.dual{display:flex;flex-direction:column;gap:14px;}
+.list-group .lg-head{
+  display:flex;align-items:center;gap:7px;margin-bottom:9px;
+}
+.lg-title{font-size:13.5px;font-weight:800;color:var(--plum);}
+.lg-badge{
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:999px;
+}
+.lg-badge.good{background:#eafaf1;color:#1f8c54;}
+.lg-badge.bad{background:#fdecea;color:#c0392b;}
+.tag-input-row{display:flex;gap:9px;margin-bottom:10px;}
+.tag-input-row .inp{flex:1 1 auto;}
+.tags{display:flex;flex-wrap:wrap;gap:7px;min-height:8px;}
+.tag{
+  display:inline-flex;align-items:center;gap:7px;
+  background:#fbf3f6;border:1px solid var(--border);
+  color:var(--plum);font-weight:800;font-size:12.5px;
+  border-radius:999px;padding:6px 8px 6px 12px;
+}
+.tag .tag-x{
+  appearance:none;border:none;background:#f3dbe4;
+  color:var(--pink-darkest);cursor:pointer;
+  width:18px;height:18px;border-radius:50%;
+  font-size:12px;line-height:1;font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.tag .tag-x:hover{background:var(--pink-deep);color:#fff;}
+.tags-empty{color:var(--muted);font-size:12.5px;font-weight:700;font-style:italic;}
+
+/* ========== Stats ========== */
+.stat-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:4px;
+}
+.stat{
+  background:#fbf3f6;border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:14px;
+}
+.stat .stat-val{
+  font-size:26px;color:var(--plum);line-height:1;
+}
+.stat .stat-key{
+  font-size:11px;font-weight:800;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.4px;margin-top:6px;
+}
+.stat-icon{font-size:15px;margin-bottom:7px;display:block;}
+
+/* recent activity — reuse dots + check-chips (PulseBoard graft) */
+.activity{display:flex;flex-direction:column;gap:9px;margin-top:4px;}
+.act-row{
+  display:flex;align-items:center;gap:9px;font-size:12.5px;
+  font-weight:700;color:var(--plum-body);
+}
+.act-row .meta-dot{margin:0;}
+.act-row .win-chip{margin-left:auto;}
+
+/* settings */
+.setting-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 0;border-bottom:1px solid var(--border);
+}
+.setting-row:last-child{border-bottom:none;}
+.setting-label{font-size:13.5px;font-weight:800;color:var(--plum);}
+.setting-desc{font-size:11.5px;font-weight:700;color:var(--muted);margin-top:2px;}
+.hours-row{display:flex;align-items:center;gap:8px;}
+.hours-row .inp{width:74px;text-align:center;padding:9px;}
+.hours-sep{font-weight:800;color:var(--muted);}
+
+/* toggle */
+.switch{position:relative;display:inline-block;width:46px;height:26px;flex:0 0 auto;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{
+  position:absolute;inset:0;cursor:pointer;
+  background:#f0d7e0;border:1px solid var(--border);
+  border-radius:999px;transition:background .18s;
+}
+.slider::before{
+  content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;
+  background:#fff;border-radius:50%;
+  box-shadow:0 1px 3px rgba(0,0,0,.18);transition:transform .18s;
+}
+.switch input:checked + .slider{background:var(--mint-strong);border-color:var(--mint-strong);}
+.switch input:checked + .slider::before{transform:translateX(20px);}
+
+/* quotes panel sub */
+.quote-hint{font-size:12px;color:var(--muted);font-weight:700;margin:0 0 11px;}
 </style>
 </head>
 <body>
+<div class="app">
 
-<header>
-  <div class="header-top">
-    <span class="emoji">🐰</span>
-    <h1>Mochi Dashboard</h1>
-  </div>
-  <div class="tabs">
-    <button class="tab active" data-tab="tasks">Tasks</button>
-    <button class="tab" data-tab="apps">App Lists</button>
-    <button class="tab" data-tab="sites">Site Lists</button>
-    <button class="tab" data-tab="stats">Stats</button>
-    <button class="tab" data-tab="quotes">Quotes</button>
-  </div>
-</header>
-
-<div class="content">
-
-  <!-- ── Tasks ─────────────────────────────────────────── -->
-  <div class="panel active" id="panel-tasks">
-    <div class="card">
-      <h3>Add Task</h3>
-      <div class="field-row">
-        <input type="text" class="flex" id="task-name" placeholder="Task name..." />
-        <input type="number" id="task-duration" placeholder="min" min="1" value="60" />
-        <button class="btn-primary" onclick="addTask()">Add</button>
+  <!-- ===== Header band ===== -->
+  <header class="header">
+    <div class="bunny" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 16 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="1" width="2" height="4" fill="#ffd6e2"/>
+        <rect x="11" y="1" width="2" height="4" fill="#ffd6e2"/>
+        <rect x="3" y="2" width="2" height="2" fill="#f29cbe"/>
+        <rect x="11" y="2" width="2" height="2" fill="#f29cbe"/>
+        <rect x="3" y="5" width="10" height="8" fill="#ffffff" stroke="#e8d0d8"/>
+        <rect x="5" y="8" width="2" height="2" fill="#443d4c"/>
+        <rect x="9" y="8" width="2" height="2" fill="#443d4c"/>
+        <rect x="7" y="10" width="2" height="1" fill="#f29cbe"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <div class="greeting">Hi, Pavni</div>
+      <div class="subtitle">Let's make today count</div>
+    </div>
+    <div class="header-chips">
+      <div class="chip chip-streak" title="Consecutive focus days">
+        <span class="chip-ico">🔥</span>
+        <span class="chip-num pixel">7</span>
+      </div>
+      <div class="chip chip-xp" title="Focus points">
+        <span class="chip-num pixel" id="xp-count">1,240</span>
+        <span class="chip-label">pts</span>
+      </div>
+      <div class="chip chip-level" title="Level">
+        <span class="chip-label">Lv</span>
+        <span class="chip-num pixel">5</span>
       </div>
     </div>
-    <div class="card">
-      <h3>Active Tasks</h3>
-      <div id="task-list"><div class="empty-state">No tasks yet — add one above!</div></div>
-    </div>
-  </div>
+  </header>
 
-  <!-- ── App Lists ──────────────────────────────────────── -->
-  <div class="panel" id="panel-apps">
-    <div class="card">
-      <h3>Productive Apps</h3>
-      <div class="field-row">
-        <input type="text" class="flex" id="prod-app-input" placeholder="e.g. code.exe" />
-        <button class="btn-primary" onclick="addItem('productiveApps', 'prod-app-input', 'prod-app-tags')">Add</button>
-      </div>
-      <div class="tag-list" id="prod-app-tags"></div>
-    </div>
-    <div class="card">
-      <h3>Distraction Apps</h3>
-      <div class="field-row">
-        <input type="text" class="flex" id="dist-app-input" placeholder="e.g. discord.exe" />
-        <button class="btn-primary" onclick="addItem('distractionApps', 'dist-app-input', 'dist-app-tags')">Add</button>
-      </div>
-      <div class="tag-list" id="dist-app-tags"></div>
-    </div>
-  </div>
+  <!-- ===== Tab bar ===== -->
+  <nav class="tabs">
+    <button class="tab active" data-tab="tasks" onclick="switchTab('tasks')">Tasks</button>
+    <button class="tab" data-tab="apps" onclick="switchTab('apps')">Apps</button>
+    <button class="tab" data-tab="sites" onclick="switchTab('sites')">Sites</button>
+    <button class="tab" data-tab="stats" onclick="switchTab('stats')">Stats</button>
+    <button class="tab" data-tab="quotes" onclick="switchTab('quotes')">Quotes</button>
+  </nav>
 
-  <!-- ── Site Lists ─────────────────────────────────────── -->
-  <div class="panel" id="panel-sites">
-    <div class="card">
-      <h3>Productive Sites</h3>
-      <div class="field-row">
-        <input type="text" class="flex" id="prod-site-input" placeholder="e.g. github.com" />
-        <button class="btn-primary" onclick="addItem('productiveSites', 'prod-site-input', 'prod-site-tags')">Add</button>
-      </div>
-      <div class="tag-list" id="prod-site-tags"></div>
-    </div>
-    <div class="card">
-      <h3>Distraction Sites</h3>
-      <div class="field-row">
-        <input type="text" class="flex" id="dist-site-input" placeholder="e.g. youtube.com" />
-        <button class="btn-primary" onclick="addItem('distractionSites', 'dist-site-input', 'dist-site-tags')">Add</button>
-      </div>
-      <div class="tag-list" id="dist-site-tags"></div>
-    </div>
-  </div>
+  <!-- ===== TASKS panel ===== -->
+  <section class="panel active" id="panel-tasks">
 
-  <!-- ── Stats ──────────────────────────────────────────── -->
-  <div class="panel" id="panel-stats">
-    <div class="card">
-      <h3>Today's Focus</h3>
-      <div class="stats-grid">
-        <div class="stat-box">
-          <div class="stat-val" id="stat-focus">0</div>
-          <div class="stat-label">Focus minutes</div>
+    <!-- Hero: Today's Focus -->
+    <div class="card hero">
+      <div class="hero-head">
+        <div>
+          <h2 class="section-title">Today's Focus</h2>
+          <p class="section-sub">Sessions completed today</p>
         </div>
-        <div class="stat-box">
-          <div class="stat-val" id="stat-distract">0</div>
-          <div class="stat-label">Distraction minutes</div>
+        <div class="hero-count"><b class="pixel">3</b> / 5 blocks</div>
+      </div>
+      <div class="seg-bar" role="img" aria-label="3 of 5 focus blocks complete">
+        <span class="seg filled"></span>
+        <span class="seg filled"></span>
+        <span class="seg filled"></span>
+        <span class="seg"></span>
+        <span class="seg"></span>
+      </div>
+      <div class="momentum"><span class="spark">✨</span>2 more blocks to hit today's goal!</div>
+      <div class="wins">
+        <span class="win-chip"><span class="wc">✓</span>Morning deep work</span>
+        <span class="win-chip"><span class="wc">✓</span>Inbox zero</span>
+        <span class="win-chip"><span class="wc">✓</span>Design review</span>
+      </div>
+    </div>
+
+    <!-- Task list (rendered by renderTasks) -->
+    <div id="task-list"></div>
+
+    <!-- Add task -->
+    <div class="card add-card">
+      <h2 class="section-title" style="margin-bottom:10px;">Add a task</h2>
+      <div class="add-row">
+        <div class="field-name">
+          <input class="inp" id="task-name" type="text" placeholder="What needs doing?" />
         </div>
-        <div class="stat-box">
-          <div class="stat-val" id="stat-streak">0</div>
-          <div class="stat-label">Current streak (min)</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val" id="stat-longest">0</div>
-          <div class="stat-label">Longest streak (min)</div>
+        <div class="field-dur">
+          <input class="inp" id="task-duration" type="number" min="1" placeholder="min" />
         </div>
       </div>
+      <button class="btn-primary full" onclick="addTask()">＋ Add task</button>
     </div>
+  </section>
+
+  <!-- ===== APPS panel ===== -->
+  <section class="panel" id="panel-apps">
     <div class="card">
-      <h3>Settings</h3>
+      <h2 class="section-title">Apps</h2>
+      <p class="section-sub">Tag the apps that help you focus — and the ones that don't.</p>
+    </div>
+    <div class="dual">
+      <div class="card list-group">
+        <div class="lg-head">
+          <span class="lg-title">Productive apps</span>
+          <span class="lg-badge good">Focus</span>
+        </div>
+        <div class="tag-input-row">
+          <input class="inp" id="prod-app-input" type="text" placeholder="e.g. VS Code" />
+          <button class="btn-primary" onclick="addItem('productiveApps','prod-app-input','prod-app-tags')">Add</button>
+        </div>
+        <div class="tags" id="prod-app-tags"></div>
+      </div>
+      <div class="card list-group">
+        <div class="lg-head">
+          <span class="lg-title">Distracting apps</span>
+          <span class="lg-badge bad">Block</span>
+        </div>
+        <div class="tag-input-row">
+          <input class="inp" id="dist-app-input" type="text" placeholder="e.g. TikTok" />
+          <button class="btn-primary" onclick="addItem('distractionApps','dist-app-input','dist-app-tags')">Add</button>
+        </div>
+        <div class="tags" id="dist-app-tags"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SITES panel ===== -->
+  <section class="panel" id="panel-sites">
+    <div class="card">
+      <h2 class="section-title">Sites</h2>
+      <p class="section-sub">Sort the websites you visit by what keeps you on track.</p>
+    </div>
+    <div class="dual">
+      <div class="card list-group">
+        <div class="lg-head">
+          <span class="lg-title">Productive sites</span>
+          <span class="lg-badge good">Focus</span>
+        </div>
+        <div class="tag-input-row">
+          <input class="inp" id="prod-site-input" type="text" placeholder="e.g. github.com" />
+          <button class="btn-primary" onclick="addItem('productiveSites','prod-site-input','prod-site-tags')">Add</button>
+        </div>
+        <div class="tags" id="prod-site-tags"></div>
+      </div>
+      <div class="card list-group">
+        <div class="lg-head">
+          <span class="lg-title">Distracting sites</span>
+          <span class="lg-badge bad">Block</span>
+        </div>
+        <div class="tag-input-row">
+          <input class="inp" id="dist-site-input" type="text" placeholder="e.g. youtube.com" />
+          <button class="btn-primary" onclick="addItem('distractionSites','dist-site-input','dist-site-tags')">Add</button>
+        </div>
+        <div class="tags" id="dist-site-tags"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STATS panel ===== -->
+  <section class="panel" id="panel-stats">
+    <div class="card">
+      <h2 class="section-title">Your stats</h2>
+      <p class="section-sub">Focus, streaks, and where your time went.</p>
+      <div class="stat-grid" style="margin-top:14px;">
+        <div class="stat">
+          <span class="stat-icon">🎯</span>
+          <div class="stat-val pixel" id="stat-focus">0</div>
+          <div class="stat-key">Focused</div>
+        </div>
+        <div class="stat">
+          <span class="stat-icon">🌀</span>
+          <div class="stat-val pixel" id="stat-distract">0</div>
+          <div class="stat-key">Distracted</div>
+        </div>
+        <div class="stat">
+          <span class="stat-icon">🔥</span>
+          <div class="stat-val pixel" id="stat-streak">0</div>
+          <div class="stat-key">Streak</div>
+        </div>
+        <div class="stat">
+          <span class="stat-icon">🏆</span>
+          <div class="stat-val pixel" id="stat-longest">0</div>
+          <div class="stat-key">Longest</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Recent activity</h2>
+      <p class="section-sub" style="margin-bottom:12px;">Same dots and chips you see on tasks.</p>
+      <div class="activity">
+        <div class="act-row"><span class="meta-dot"></span>Finished a focus block<span class="win-chip"><span class="wc">✓</span>+15 pts</span></div>
+        <div class="act-row"><span class="meta-dot" style="background:var(--amber);"></span>Snoozed “Write report”<span class="win-chip"><span class="wc">✓</span>+0 pts</span></div>
+        <div class="act-row"><span class="meta-dot"></span>Hit a 7-day streak<span class="win-chip"><span class="wc">✓</span>+50 pts</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Settings</h2>
       <div class="setting-row">
         <div>
-          <div class="setting-label">Launch at Windows startup</div>
-          <div class="setting-desc">Start Mochi automatically when you log in</div>
+          <div class="setting-label">Launch on startup</div>
+          <div class="setting-desc">Open Mochi when you log in</div>
         </div>
-        <div class="toggle" id="startup-toggle" onclick="toggleStartup()"></div>
+        <label class="switch">
+          <input type="checkbox" id="startup-toggle" onclick="toggleStartup()" />
+          <span class="slider"></span>
+        </label>
       </div>
       <div class="setting-row">
         <div>
-          <div class="setting-label">Active hours</div>
-          <div class="setting-desc">Mochi sleeps outside these hours</div>
+          <div class="setting-label">Focus hours</div>
+          <div class="setting-desc">When Mochi keeps you on track</div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input type="number" id="hours-start" min="0" max="23" value="9" style="width:55px" onchange="saveHours()"> : 00 –
-          <input type="number" id="hours-end" min="0" max="23" value="22" style="width:55px" onchange="saveHours()"> : 00
+        <div class="hours-row">
+          <input class="inp" id="hours-start" type="number" min="0" max="23" value="9" onchange="saveHours()" />
+          <span class="hours-sep">—</span>
+          <input class="inp" id="hours-end" type="number" min="0" max="23" value="22" onchange="saveHours()" />
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ── Quotes ─────────────────────────────────────────── -->
-  <div class="panel" id="panel-quotes">
-    <div class="card">
-      <h3>Add Quote</h3>
-      <div class="field-row">
-        <input type="text" class="flex" id="quote-input" placeholder="your motivational quote..." />
-        <button class="btn-primary" onclick="addItem('quotes', 'quote-input', 'quote-tags')">Add</button>
+  <!-- ===== QUOTES panel ===== -->
+  <section class="panel" id="panel-quotes">
+    <div class="card list-group">
+      <h2 class="section-title">Motivation quotes</h2>
+      <p class="quote-hint">Add lines that get you moving — Mochi rotates them through your day.</p>
+      <div class="tag-input-row">
+        <input class="inp" id="quote-input" type="text" placeholder="e.g. Done is better than perfect" />
+        <button class="btn-primary" onclick="addItem('quotes','quote-input','quote-tags')">Add</button>
       </div>
+      <div class="tags" id="quote-tags"></div>
     </div>
-    <div class="card">
-      <h3>Quote Pool</h3>
-      <div class="tag-list" id="quote-tags"></div>
-    </div>
-  </div>
+  </section>
 
-</div><!-- .content -->
+</div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────
 let lists = { productiveApps: [], distractionApps: [], productiveSites: [], distractionSites: [], quotes: [] }
+let startupEnabled = false
 
 // ── Tab switching ─────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
@@ -291,37 +688,83 @@ async function init() {
   await renderTasks()
   await refreshStats()
 
-  // Startup toggle — keep the in-memory flag in sync with the real OS state,
-  // otherwise the first click can no-op (flips a stale `false` back to enabled).
+  // Startup toggle is a checkbox — reflect the real OS state.
   startupEnabled = await window.mochi.getStartupStatus()
-  document.getElementById('startup-toggle').classList.toggle('on', startupEnabled)
+  const st = document.getElementById('startup-toggle')
+  if (st) st.checked = startupEnabled
 }
 init()
 
 // ── Tasks ──────────────────────────────────────────────────────────
-async function renderTasks(tasks) {
-  if (!tasks) tasks = await window.mochi.getTasks()
-  const list = document.getElementById('task-list')
-  if (!tasks || tasks.length === 0) {
-    list.innerHTML = '<div class="empty-state">No tasks yet — add one above!</div>'
-    return
+async function renderTasks(tasks){
+  const list = document.getElementById('task-list');
+  if(!list) return;
+  if(!tasks) tasks = await window.mochi.getTasks();
+  const now = new Date();
+
+  if(!tasks || tasks.length === 0){
+    list.innerHTML =
+      '<div class="card empty">' +
+        '<span class="big">🌸</span>' +
+        'No tasks yet — add your first one below to start a focus block.' +
+      '</div>';
+    return;
   }
 
-  const now = new Date()
-  list.innerHTML = tasks.map(t => {
-    const deadline = new Date(t.deadlineAt)
-    const isOverdue = !t.done && deadline < now
-    const timeStr = formatDeadline(deadline, now)
-    return `
-    <div class="task-item ${isOverdue ? 'overdue' : ''} ${t.done ? 'done' : ''}">
-      <div class="task-name">${escHtml(t.name)}</div>
-      <div class="task-deadline ${isOverdue ? 'overdue-label' : ''}">${timeStr}</div>
-      <div class="task-actions">
-        ${!t.done ? `<button class="btn-success" onclick="completeTask(${t.id})">✓</button>` : '<span style="color:#2ecc71;font-size:12px">✓ Done</span>'}
-        <button class="btn-danger" onclick="dismissTask(${t.id})">✕</button>
-      </div>
-    </div>`
-  }).join('')
+  // Emoji avatars assigned deterministically per task for warmth/personality.
+  const EMOJI = ['🐰','📚','✏️','🎨','💻','☕','🌱','🎯','📝','🧩','🌷','⭐'];
+  const pickEmoji = (t) => {
+    const key = String(t.id != null ? t.id : (t.name || ''));
+    let h = 0;
+    for(let i=0;i<key.length;i++){ h = (h*31 + key.charCodeAt(i)) >>> 0; }
+    return EMOJI[h % EMOJI.length];
+  };
+
+  list.innerHTML = tasks.map(function(t){
+    const isOverdue = !t.done && new Date(t.deadlineAt) < now;
+
+    // Urgency class: red=overdue, amber=due soon (<=30m), mint=plenty of time.
+    let urg = 'urg-ok';
+    if(t.done){
+      urg = 'urg-ok';
+    } else if(isOverdue){
+      urg = 'urg-overdue';
+    } else {
+      const msLeft = new Date(t.deadlineAt) - now;
+      urg = (msLeft <= 30*60*1000) ? 'urg-soon' : 'urg-ok';
+    }
+
+    const deadlineTxt = escHtml(formatDeadline(new Date(t.deadlineAt), now));
+    const deadlineCls = isOverdue ? 'meta-deadline is-overdue' : 'meta-deadline';
+    const durTxt = (t.durationMinutes != null && t.durationMinutes !== '')
+      ? (escHtml(String(t.durationMinutes)) + ' min')
+      : 'Quick task';
+
+    const emoji = pickEmoji(t);
+    const checkGlyph = t.done ? '✓' : '';
+
+    return (
+      '<div class="task ' + urg + (t.done ? ' done' : '') + '" data-id="' + escHtml(String(t.id)) + '">' +
+        '<button class="check" aria-label="Complete task" onclick="completeTask(' + JSON.stringify(t.id) + ')">' + checkGlyph + '</button>' +
+        '<div class="task-body">' +
+          '<div class="task-top">' +
+            '<span class="task-emoji" aria-hidden="true">' + emoji + '</span>' +
+            '<span class="task-name">' + escHtml(t.name || 'Untitled task') + '</span>' +
+          '</div>' +
+          '<div class="task-meta">' +
+            '<span class="meta-dot"></span>' +
+            '<span class="meta-duration">' + durTxt + '</span>' +
+            '<span class="meta-sep">•</span>' +
+            '<span class="' + deadlineCls + '">' + deadlineTxt + '</span>' +
+            '<span class="xp-pill">+15 XP</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="task-actions">' +
+          '<button class="menu-btn" aria-label="Task menu" onclick="dismissTask(' + JSON.stringify(t.id) + ')">⋯</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
 }
 
 function formatDeadline(deadline, now) {
@@ -361,16 +804,25 @@ document.getElementById('task-name').addEventListener('keydown', (e) => {
 window.mochi.onTasksUpdate(tasks => renderTasks(tasks))
 
 // ── Tag lists ──────────────────────────────────────────────────────
-function renderTags(listKey, containerId) {
-  const container = document.getElementById(containerId)
-  const items = lists[listKey] || []
-  if (items.length === 0) {
-    container.innerHTML = '<span style="color:#aaa;font-style:italic;font-size:12px">None added yet</span>'
-    return
+function renderTags(listKey, containerId){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const items = (typeof lists !== 'undefined' && lists[listKey]) ? lists[listKey] : [];
+
+  if(!items || items.length === 0){
+    container.innerHTML = '<span class="tags-empty">Nothing here yet.</span>';
+    return;
   }
-  container.innerHTML = items.map((item, i) =>
-    `<span class="tag">${escHtml(item)}<span class="rm" onclick="removeItem('${listKey}','${containerId}',${i})">×</span></span>`
-  ).join('')
+
+  container.innerHTML = items.map(function(item, i){
+    return (
+      '<span class="tag">' +
+        escHtml(String(item)) +
+        '<button class="tag-x" aria-label="Remove" ' +
+          'onclick="removeItem(' + JSON.stringify(listKey) + ',' + JSON.stringify(containerId) + ',' + i + ')">×</button>' +
+      '</span>'
+    );
+  }).join('');
 }
 
 function addItem(listKey, inputId, containerId) {
@@ -420,11 +872,9 @@ async function refreshStats() {
 }
 
 // ── Settings ───────────────────────────────────────────────────────
-let startupEnabled = false
-
 async function toggleStartup() {
-  startupEnabled = !startupEnabled
-  document.getElementById('startup-toggle').classList.toggle('on', startupEnabled)
+  const st = document.getElementById('startup-toggle')
+  startupEnabled = st ? st.checked : !startupEnabled
   await window.mochi.toggleStartup(startupEnabled)
 }
 

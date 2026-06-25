@@ -1,4 +1,5 @@
 const Store = require('electron-store')
+const SEED = require('./seed-content.json')
 
 const DEFAULTS = {
   productiveApps: ['code.exe', 'cursor.exe', 'notion.exe', 'obsidian.exe', 'word.exe', 'excel.exe'],
@@ -80,6 +81,22 @@ class MochiStore {
       defaults: DEFAULTS,
       clearInvalidConfig: true
     })
+    // One-time, non-destructive content seed: union the curated quote/app/site
+    // lists into whatever's already saved (deduped), so existing installs pick up
+    // the new content without losing custom entries or resurrecting deleted ones.
+    this._seedContent()
+  }
+
+  _seedContent() {
+    const settings = this.get('settings') || {}
+    if (settings.seededContentV1) return
+    const keys = ['quotes', 'productiveApps', 'distractionApps', 'productiveSites', 'distractionSites']
+    for (const k of keys) {
+      const current = this.get(k) || []
+      const merged = Array.from(new Set([...current, ...(SEED[k] || [])]))
+      this.set(k, merged)
+    }
+    this.set('settings', { ...settings, seededContentV1: true })
   }
 
   get(key) {
