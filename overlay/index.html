@@ -27,7 +27,7 @@
   /* ── Pop-out panel ───────────────────────────────────── */
   #panel {
     position: absolute;
-    bottom: 132px;
+    bottom: 160px;
     left: 8px;
     width: 270px;
     max-height: 360px;
@@ -127,7 +127,7 @@
   #speech-bubble {
     display: none;
     position: absolute;
-    bottom: 128px;
+    bottom: 156px;
     left: 8px;
     max-width: 220px;
     background: #fffdf0;
@@ -150,15 +150,18 @@
   #speech-bubble.visible { display: block; }
 
   /* ── Character (Mochi) ───────────────────────────────── */
+  /* Portrait box so the (taller-than-wide) bunny isn't squished. */
   #character-wrap {
-    position: relative; width: 120px; height: 120px;
-    cursor: pointer; flex-shrink: 0; align-self: flex-start; margin-left: 14px;
+    position: relative; width: 104px; height: 150px;
+    cursor: pointer; flex-shrink: 0; align-self: flex-start; margin-left: 16px;
   }
-  #mochi { width: 120px; height: 120px; display: block; }
+  #mochi { width: 100%; height: 100%; display: block; }
 
-  /* Custom sprite frames (Pavni's bunny). Hidden until frames are loaded. */
+  /* Custom sprite frames (Pavni's bunny). Hidden until frames are loaded.
+     object-fit: contain keeps the original aspect ratio (no stretching). */
   #mochi-img {
-    width: 120px; height: 120px; display: none;
+    width: 100%; height: 100%; display: none;
+    object-fit: contain; object-position: center bottom;
     image-rendering: pixelated; image-rendering: crisp-edges;
     transform-origin: center bottom;
   }
