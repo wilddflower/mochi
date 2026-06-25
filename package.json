@@ -22,8 +22,9 @@
   "build": {
     "appId": "com.pavni.mochi",
     "productName": "Mochi",
+    "asar": false,
     "win": {
-      "target": "portable"
+      "target": "dir"
     }
   },
   "jest": {
