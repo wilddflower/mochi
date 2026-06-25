@@ -60,6 +60,7 @@ const DEFAULTS = {
   todayList: [],          // simple daily checklist: { id, text, done, date }
   dailyBreak: {},         // { date: 'YYYY-MM-DD', minutesUsed: number }
   dailyWork: {},          // { date: 'YYYY-MM-DD', minutesUsed: number } — cumulative work clock
+  workLog: [],            // [{ date, at, reason, unfinished[] }] — End Work reasons
   settings: {
     activeHoursStart: 9,
     activeHoursEnd: 22,

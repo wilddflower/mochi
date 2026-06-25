@@ -82,6 +82,15 @@ class SessionManager extends EventEmitter {
     return true
   }
 
+  endWork() {
+    if (this.state === 'break') this._bankBreak()
+    else if (this.state === 'working') this._bankWork()
+    this.state = 'idle'
+    this.workStartedAt = null
+    this.breakStartedAt = null
+    this._emitState()
+  }
+
   _onTick() {
     if (this.state === 'break' && this.getBreakUsedMinutes() >= BREAK_BUDGET_MIN) {
       // Budget exhausted mid-break → force back to work.

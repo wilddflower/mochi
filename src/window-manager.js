@@ -92,17 +92,36 @@ class WindowManager {
   getOverlayWindow() { return this.overlayWindow }
   getDashboardWindow() { return this.dashboardWindow }
 
-  // Show/hide Mochi entirely (the whole overlay window).
+  // User pressed Ctrl+M — toggle and remember their preference.
   toggleOverlayVisibility() {
     if (!this.overlayWindow || this.overlayWindow.isDestroyed()) return
     if (this.overlayWindow.isVisible()) {
+      this.userHidden = true
       this.overlayWindow.hide()
     } else {
-      this.overlayWindow.showInactive()
-      this.overlayWindow.setAlwaysOnTop(true, 'screen-saver')
-      // Greet with an ear flop when called back up
-      this.sendToOverlay('play-flop')
+      this.userHidden = false
+      this._show()
     }
+  }
+
+  _show() {
+    if (!this.overlayWindow || this.overlayWindow.isDestroyed()) return
+    this.overlayWindow.showInactive()
+    this.overlayWindow.setAlwaysOnTop(true, 'screen-saver')
+    this.sendToOverlay('play-flop')
+  }
+
+  // Force Mochi to appear (e.g. caught on a blocked site) even if Ctrl+M-hidden,
+  // without changing the user's hide preference.
+  forceShow() {
+    if (!this.overlayWindow || this.overlayWindow.isDestroyed()) return
+    if (!this.overlayWindow.isVisible()) this._show()
+  }
+
+  // Return to the user's preference — re-hide if they had pressed Ctrl+M.
+  restoreUserPreference() {
+    if (!this.overlayWindow || this.overlayWindow.isDestroyed()) return
+    if (this.userHidden && this.overlayWindow.isVisible()) this.overlayWindow.hide()
   }
 
   sendToOverlay(channel, data) {

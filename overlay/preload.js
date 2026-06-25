@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld('mochi', {
   // Session controls
   startWork: () => ipcRenderer.send('session-start-work'),
   takeBreak: () => ipcRenderer.send('session-take-break'),
+  endWork: () => ipcRenderer.send('session-end-work'),
+  submitReason: (reason) => ipcRenderer.send('work-reason', reason),
+  onAskReason: (cb) => ipcRenderer.on('ask-reason', (_, items) => cb(items)),
 
   // Today list
   addTodo: (text) => ipcRenderer.send('today-add', text),

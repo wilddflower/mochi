@@ -36,6 +36,12 @@ app.whenReady().then(async () => {
   windowMonitor.on('foreground-changed', (info) => {
     if (sessionManager.state === 'working' && !store.get('settings.paused')) {
       moodEngine.onWindowChanged(info)
+      // Caught on a blocked site → pop up even if Ctrl+M-hidden; restore when off.
+      if (WindowMonitor.classify(info, store) === 'distraction') {
+        windowManager.forceShow()
+      } else {
+        windowManager.restoreUserPreference()
+      }
     }
   })
   windowMonitor.start()
@@ -157,6 +163,37 @@ function setupIpcHandlers() {
   ipcMain.on('session-start-work', () => sessionManager.startWork())
   ipcMain.on('session-take-break', () => sessionManager.takeBreak())
 
+  // End Work: if the to-do list isn't done, get annoyed and demand a reason
+  // before ending. Otherwise end happily.
+  ipcMain.on('session-end-work', () => {
+    const unfinished = getTodayList().filter(t => !t.done)
+    if (unfinished.length > 0) {
+      windowManager.forceShow()
+      flashMood('angry', 6000)
+      windowManager.sendToOverlay('quote-show',
+        `you still have ${unfinished.length} thing${unfinished.length > 1 ? 's' : ''}!! 😤 why are you stopping??`)
+      windowManager.sendToOverlay('ask-reason', unfinished.map(t => t.text))
+    } else {
+      sessionManager.endWork()
+      flashMood('celebrate', 4000)
+      windowManager.sendToOverlay('quote-show', 'great work today!! so proud 🎉')
+    }
+  })
+
+  // Reason submitted from the End Work prompt → log it and end the session.
+  ipcMain.on('work-reason', (_, reason) => {
+    const log = store.get('workLog') || []
+    log.push({
+      date: store.getTodayKey(),
+      at: new Date().toISOString(),
+      reason: String(reason || '').trim(),
+      unfinished: getTodayList().filter(t => !t.done).map(t => t.text)
+    })
+    store.set('workLog', log)
+    sessionManager.endWork()
+    windowManager.sendToOverlay('quote-show', '...fine. logged it. 👀 do better tmrw')
+  })
+
   // ── Today list ──
   ipcMain.on('today-add', (_, text) => {
     const today = store.getTodayKey()
@@ -178,11 +215,12 @@ function setupIpcHandlers() {
     if (item.done) {
       const remaining = getTodayList().filter(t => !t.done).length
       if (remaining === 0) {
-        // Whole list cleared → celebration animation (then back to real mood)
+        // Whole list cleared → crown celebration
         flashMood('celebrate', 5000)
         windowManager.sendToOverlay('quote-show', 'ALL DONE! you legend 🎉')
       } else {
-        flashMood('happy', 3000)
+        // One task done → the "complete" pose (both ears flopped)
+        flashMood('complete', 3000)
         const quote = quoteEngine.getQuote('task-complete')
         windowManager.sendToOverlay('quote-show', quote || 'nice one! ✓')
       }

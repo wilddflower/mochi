@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: 320px;
@@ -74,6 +75,17 @@
   .btn-work  { background: #6ec18a; color: #fff; }
   .btn-break { background: #f2c14e; color: #6b4e00; }
   .btn-back  { background: #6ec18a; color: #fff; }
+  .btn-end   { background: #e0728a; color: #fff; }
+
+  /* End-Work reason prompt */
+  #reason-box { display: none; flex-direction: column; gap: 6px;
+                background: #fdeef2; border: 1px solid #f3d6de;
+                border-radius: 10px; padding: 10px; }
+  #reason-box.show { display: flex; }
+  #reason-box .rt { font-size: 11px; font-weight: 700; color: #b0436a; }
+  #reason-box input { border: 1px solid #f0cdd7; border-radius: 8px;
+                      padding: 7px 9px; font-size: 12px; outline: none; }
+  #reason-box input:focus { border-color: #e0a8b6; }
 
   /* Today list */
   .today-head { font-size: 11px; font-weight: 700; color: #a98a93;
@@ -123,29 +135,36 @@
     border-right: 10px solid transparent; border-top: 10px solid #e8b4c0;
   }
 
-  /* ── Speech bubble ───────────────────────────────────── */
+  /* ── Speech bubble (pixel-art style) ─────────────────── */
   #speech-bubble {
     display: none;
     position: absolute;
-    bottom: 156px;
+    bottom: 158px;
     left: 8px;
-    max-width: 220px;
-    background: #fffdf0;
-    border: 2px solid #b0436a;
-    border-radius: 10px;
-    padding: 7px 11px;
-    font-size: 12px;
-    line-height: 1.4;
-    color: #5a2a3a;
-    text-align: center;
-    box-shadow: 2px 2px 0 #b0436a;
-    z-index: 15;
+    max-width: 230px;
+    background: #ffffff;
+    border: 3px solid #1c1c1c;
+    border-radius: 8px;
+    padding: 9px 13px;
+    font-family: 'Pixelify Sans', 'Consolas', 'DejaVu Sans Mono', monospace;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #1c1c1c;
+    text-align: left;
+    box-shadow: 5px 5px 0 rgba(0,0,0,0.20);
+    z-index: 30;
     word-break: break-word;
   }
+  /* tail: black outline triangle + white fill triangle, pointing down to Mochi */
+  #speech-bubble::before {
+    content: ''; position: absolute; bottom: -15px; left: 26px;
+    width: 0; height: 0; border-left: 9px solid transparent;
+    border-right: 9px solid transparent; border-top: 15px solid #1c1c1c;
+  }
   #speech-bubble::after {
-    content: ''; position: absolute; bottom: -8px; left: 40px;
+    content: ''; position: absolute; bottom: -10px; left: 29px;
     width: 0; height: 0; border-left: 6px solid transparent;
-    border-right: 6px solid transparent; border-top: 8px solid #b0436a;
+    border-right: 6px solid transparent; border-top: 11px solid #ffffff;
   }
   #speech-bubble.visible { display: block; }
 
@@ -230,6 +249,12 @@
 
     <div class="controls" id="controls"></div>
 
+    <div id="reason-box">
+      <div class="rt" id="reason-text">why are you stopping early? 😤</div>
+      <input type="text" id="reason-input" placeholder="give me a reason..." maxlength="120">
+      <button class="btn btn-end" id="reason-submit">tell Mochi</button>
+    </div>
+
     <div class="today-head">Today's list</div>
     <div id="today-items"><div class="empty">nothing yet — add something!</div></div>
     <div class="add-row">
@@ -295,6 +320,9 @@ const breakLeftEl = document.getElementById('break-left')
 const controlsEl = document.getElementById('controls')
 const todayItemsEl = document.getElementById('today-items')
 const todoInput = document.getElementById('todo-input')
+const reasonBox = document.getElementById('reason-box')
+const reasonInput = document.getElementById('reason-input')
+const reasonText = document.getElementById('reason-text')
 
 const MOODS = ['happy','focused','encouraging','sad','angry','nagging','sleeping']
 let currentMood = 'encouraging'
@@ -418,12 +446,17 @@ function renderControls(status) {
   } else if (s === 'working') {
     const disabled = status.breakAllowed ? '' : 'disabled'
     controlsEl.innerHTML =
-      '<button class="btn btn-break" id="c-break" ' + disabled + '>☕ Take a Break</button>'
+      '<button class="btn btn-break" id="c-break" ' + disabled + '>☕ Break</button>' +
+      '<button class="btn btn-end" id="c-end">⏹ End Work</button>'
     const b = document.getElementById('c-break')
     if (b && status.breakAllowed) b.onclick = () => window.mochi.takeBreak()
+    document.getElementById('c-end').onclick = () => window.mochi.endWork()
   } else if (s === 'break') {
-    controlsEl.innerHTML = '<button class="btn btn-back" id="c-back">▶ Back to Work</button>'
+    controlsEl.innerHTML =
+      '<button class="btn btn-back" id="c-back">▶ Back to Work</button>' +
+      '<button class="btn btn-end" id="c-end">⏹ End Work</button>'
     document.getElementById('c-back').onclick = () => window.mochi.startWork()
+    document.getElementById('c-end').onclick = () => window.mochi.endWork()
   }
 }
 
@@ -478,6 +511,17 @@ function addTodo() {
 document.getElementById('todo-add').onclick = addTodo
 todoInput.addEventListener('keydown', e => { if (e.key === 'Enter') addTodo() })
 
+// ── End-Work reason prompt ──
+function submitReason() {
+  const v = reasonInput.value.trim()
+  if (!v) return
+  window.mochi.submitReason(v)
+  reasonInput.value = ''
+  reasonBox.classList.remove('show')
+}
+document.getElementById('reason-submit').onclick = submitReason
+reasonInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitReason() })
+
 // ── IPC from main ──
 window.mochi.onMoodChanged(data => setMood(data.mood || data))
 window.mochi.onQuoteShow(text => showBubble(text))
@@ -492,6 +536,13 @@ window.mochi.onSpriteManifest(manifest => {
   setTimeout(playFlop, 700) // greeting flop once frames are loaded
 })
 window.mochi.onPlayFlop(() => playFlop()) // Ctrl+M called her back up
+window.mochi.onAskReason(items => {
+  const n = (items || []).length
+  reasonText.textContent = `you left ${n} thing${n > 1 ? 's' : ''} undone 😤 why?`
+  reasonBox.classList.add('show')
+  openPanel()
+  reasonInput.focus()
+})
 
 window.mochi.onDistractionTimer(seconds => {
   if (seconds <= 0) { timer.classList.remove('visible'); return }

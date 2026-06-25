@@ -4,7 +4,7 @@ const WindowMonitor = require('./window-monitor')
 // Priority: Nagging > Sleeping > Angry > Sad > Focused > Happy > Encouraging
 const MOODS = ['nagging', 'sleeping', 'angry', 'sad', 'focused', 'happy', 'encouraging']
 
-const DISTRACTION_ESCALATE_MS = 5 * 60 * 1000  // 5 min → Angry
+const DISTRACTION_ESCALATE_MS = 1 * 60 * 1000  // 1 min on a blocked site → Angry
 const FOCUS_ESCALATE_MS = 10 * 60 * 1000        // 10 min → Focused
 const IDLE_THRESHOLD_MS = 30 * 1000              // 30s no change → Encouraging
 const MILESTONE_INTERVALS = [15, 30, 45, 60]    // minutes
