@@ -10,12 +10,12 @@ class WindowManager {
 
   async createOverlay() {
     // Use full display bounds (not workArea) so Mochi can sit ON the taskbar,
-    // bottom-right by the clock.
+    // bottom-left corner.
     const display = screen.getPrimaryDisplay()
-    const { width: sw, height: sh, x: bx, y: by } = display.bounds
+    const { height: sh, x: bx, y: by } = display.bounds
     const WIN_W = 320
     const WIN_H = 520
-    const x = bx + sw - WIN_W - 6
+    const x = bx + 6
     const y = by + sh - WIN_H
 
     this.overlayWindow = new BrowserWindow({

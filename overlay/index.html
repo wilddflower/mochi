@@ -28,7 +28,7 @@
   #panel {
     position: absolute;
     bottom: 132px;
-    right: 8px;
+    left: 8px;
     width: 270px;
     max-height: 360px;
     background: #fffdfb;
@@ -113,12 +113,12 @@
 
   /* Panel tail pointing to Mochi */
   #panel::after {
-    content: ''; position: absolute; bottom: -9px; right: 44px;
+    content: ''; position: absolute; bottom: -9px; left: 44px;
     width: 0; height: 0; border-left: 9px solid transparent;
     border-right: 9px solid transparent; border-top: 9px solid #fffdfb;
   }
   #panel::before {
-    content: ''; position: absolute; bottom: -12px; right: 43px;
+    content: ''; position: absolute; bottom: -12px; left: 43px;
     width: 0; height: 0; border-left: 10px solid transparent;
     border-right: 10px solid transparent; border-top: 10px solid #e8b4c0;
   }
@@ -128,7 +128,7 @@
     display: none;
     position: absolute;
     bottom: 128px;
-    right: 8px;
+    left: 8px;
     max-width: 220px;
     background: #fffdf0;
     border: 2px solid #b0436a;
@@ -143,7 +143,7 @@
     word-break: break-word;
   }
   #speech-bubble::after {
-    content: ''; position: absolute; bottom: -8px; right: 40px;
+    content: ''; position: absolute; bottom: -8px; left: 40px;
     width: 0; height: 0; border-left: 6px solid transparent;
     border-right: 6px solid transparent; border-top: 8px solid #b0436a;
   }
@@ -152,7 +152,7 @@
   /* ── Character (Mochi) ───────────────────────────────── */
   #character-wrap {
     position: relative; width: 120px; height: 120px;
-    cursor: pointer; flex-shrink: 0; align-self: flex-end; margin-right: 14px;
+    cursor: pointer; flex-shrink: 0; align-self: flex-start; margin-left: 14px;
   }
   #mochi { width: 120px; height: 120px; display: block; }
 
@@ -181,7 +181,7 @@
   #mochi.mood-nagging .angry-brows { display: block; opacity: 0.65; }
 
   #task-badge {
-    display: none; position: absolute; top: 2px; right: 2px;
+    display: none; position: absolute; top: 2px; left: 2px;
     background: #e74c3c; color: white; font-size: 9px; font-weight: bold;
     width: 18px; height: 18px; border-radius: 50%;
     align-items: center; justify-content: center; border: 1.5px solid #fff; z-index: 5;
@@ -190,8 +190,8 @@
 
   #distraction-timer {
     display: none; font-size: 10px; color: #fff; background: rgba(231,76,60,0.92);
-    border-radius: 10px; padding: 2px 8px; margin-top: 2px; margin-right: 14px;
-    letter-spacing: 0.5px; height: 18px; align-items: center; align-self: flex-end;
+    border-radius: 10px; padding: 2px 8px; margin-top: 2px; margin-left: 14px;
+    letter-spacing: 0.5px; height: 18px; align-items: center; align-self: flex-start;
   }
   #distraction-timer.visible { display: flex; }
 </style>

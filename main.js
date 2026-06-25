@@ -110,9 +110,10 @@ app.whenReady().then(async () => {
   sessionTracker.checkDateRollover()
 
   // Global hotkey: pop out the checklist panel
-  globalShortcut.register('CommandOrControl+Shift+M', () => {
+  const hotkeyOk = globalShortcut.register('CommandOrControl+M', () => {
     windowManager.sendToOverlay('toggle-panel')
   })
+  if (!hotkeyOk) console.error('[hotkey] Ctrl+M registration failed (already in use)')
 
   await AutoLaunch.enableIfFirstRun(store)
 })
