@@ -15,6 +15,18 @@ let store, windowManager, trayManager, windowMonitor, moodEngine
 let sessionTracker, sessionManager, taskManager, quoteEngine
 
 
+// Single-instance lock — auto-launch and the login Startup shortcut can both try
+// to start Mochi; without this a second copy spawns a duplicate overlay, tray, and
+// PowerShell poller that fight each other. The second instance just bows out (and
+// surfaces the dashboard of the one already running).
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+
+app.on('second-instance', () => {
+  if (windowManager) windowManager.showDashboard()
+})
+
 app.whenReady().then(async () => {
   store = new Store()
   windowManager = new WindowManager(store)
@@ -28,7 +40,18 @@ app.whenReady().then(async () => {
 
   await windowManager.createOverlay()
   await windowManager.createDashboard()
-  trayManager = new TrayManager(windowManager, store)
+  trayManager = new TrayManager(windowManager, store, (paused) => {
+    // Tray pause/resume must actually quiet the engine — not just flip a flag.
+    if (paused) {
+      moodEngine.pause()
+      if (windowMonitor) windowMonitor.pause()
+      windowManager.sendToOverlay('distraction-timer-update', 0)
+      windowManager.sendToOverlay('mood-changed', { mood: 'encouraging' })
+    } else {
+      if (windowMonitor) windowMonitor.resume()
+      moodEngine.resume()
+    }
+  })
   trayManager.create()
 
   // Window monitor → mood engine (only while a work session is active)
@@ -125,6 +148,8 @@ app.whenReady().then(async () => {
 
   await AutoLaunch.enableIfFirstRun(store)
 })
+
+} // end single-instance guard
 
 // ── Today list helpers ───────────────────────────────────────────────
 function getTodayList() {

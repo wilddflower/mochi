@@ -29,6 +29,7 @@
   },
   "jest": {
     "testEnvironment": "node",
+    "modulePathIgnorePatterns": ["<rootDir>/dist/"],
     "moduleNameMapper": {
       "^electron$": "<rootDir>/test/__mocks__/electron.js"
     }

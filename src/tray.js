@@ -2,9 +2,10 @@ const { Tray, Menu, nativeImage, app } = require('electron')
 const path = require('path')
 
 class TrayManager {
-  constructor(windowManager, store) {
+  constructor(windowManager, store, onToggle) {
     this.windowManager = windowManager
     this.store = store
+    this.onToggle = onToggle  // (paused: boolean) => void — lets main actually pause the engine
     this.tray = null
   }
 
@@ -43,6 +44,7 @@ class TrayManager {
     const next = !this.store.get('settings.paused')
     this.store.set('settings.paused', next)
     this._buildMenu()
+    if (this.onToggle) this.onToggle(next)
   }
 
   updatePauseLabel(paused) {

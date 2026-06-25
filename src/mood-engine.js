@@ -35,7 +35,13 @@ class MoodEngine extends EventEmitter {
     this.currentMood = this._computeMood()
   }
 
-  pause() { this.paused = true }
+  pause() {
+    this.paused = true
+    // Drop in-flight focus/distraction streaks so resuming starts clean
+    // (otherwise a stale distraction timer keeps escalating after resume).
+    this._distractionStartTime = null
+    this._focusStartTime = null
+  }
   resume() { this.paused = false; this._recalculateMood() }
 
   setSessionState(state) {

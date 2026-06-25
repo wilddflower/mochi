@@ -291,9 +291,10 @@ async function init() {
   await renderTasks()
   await refreshStats()
 
-  // Startup toggle
-  const enabled = await window.mochi.getStartupStatus()
-  document.getElementById('startup-toggle').classList.toggle('on', enabled)
+  // Startup toggle — keep the in-memory flag in sync with the real OS state,
+  // otherwise the first click can no-op (flips a stale `false` back to enabled).
+  startupEnabled = await window.mochi.getStartupStatus()
+  document.getElementById('startup-toggle').classList.toggle('on', startupEnabled)
 }
 init()
 
