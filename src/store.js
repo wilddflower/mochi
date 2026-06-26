@@ -62,6 +62,7 @@ const DEFAULTS = {
   dailyBreak: {},         // { date: 'YYYY-MM-DD', minutesUsed: number }
   dailyWork: {},          // { date: 'YYYY-MM-DD', minutesUsed: number } — cumulative work clock
   workLog: [],            // [{ date, at, reason, unfinished[] }] — End Work reasons
+  activityLog: [],        // [{ at, icon, text, points }] — recent gamified events, newest first
   settings: {
     activeHoursStart: 9,
     activeHoursEnd: 22,
@@ -134,6 +135,14 @@ class MochiStore {
     const stats = this.get('stats') || {}
     stats[key] = { ...stats[key], ...data }
     this.set('stats', stats)
+  }
+
+  // Append a gamified event to the activity log (newest first, capped at 30).
+  pushActivity(entry) {
+    const log = this.get('activityLog') || []
+    log.unshift({ at: new Date().toISOString(), ...entry })
+    if (log.length > 30) log.length = 30
+    this.set('activityLog', log)
   }
 }
 

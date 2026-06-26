@@ -131,11 +131,12 @@ app.whenReady().then(async () => {
     }
   })
 
-  // Keep overdue task badge fresh
+  // Keep overdue task badge + dashboard data fresh (incl. live focus-block progress)
   setInterval(() => {
     const count = taskManager.getOverdueTasks().length
     windowManager.sendToOverlay('task-badge-update', count)
     windowManager.sendToDashboard('tasks-update', taskManager.getTasks())
+    windowManager.sendToDashboard('gamification-update', computeGamification())
   }, 5000)
 
   sessionTracker.checkDateRollover()
@@ -167,6 +168,57 @@ function flashMood(mood, ms = 4000) {
   setTimeout(() => {
     windowManager.sendToOverlay('mood-changed', { mood: moodEngine.getCurrentMood() })
   }, ms)
+}
+
+// ── Gamification (all derived from real stored data) ─────────────────
+const BLOCK_MIN = 25            // one "focus block" = 25 min of work-session time
+const POINTS_PER_LEVEL = 200    // points to advance a level
+const STREAK_MIN = 5            // a day counts toward the streak at >= 5 focus min
+
+// XP for completing a task — scales with its duration, clamped to 5..60.
+function xpForTask(task) {
+  return Math.max(5, Math.min(60, Math.round((task && task.durationMinutes) || 10)))
+}
+
+// Consecutive days (ending today, or yesterday if today's still empty) with real focus.
+function computeDayStreak(stats) {
+  const DAY = 86400000
+  const keyOf = (ms) => new Date(ms).toISOString().slice(0, 10)
+  const has = (k) => !!(stats[k] && (stats[k].focusMinutes || 0) >= STREAK_MIN)
+  let cursor = Date.parse(store.getTodayKey() + 'T00:00:00.000Z')
+  if (!has(keyOf(cursor))) cursor -= DAY // today not active yet — streak can still be alive
+  let streak = 0
+  while (has(keyOf(cursor))) { streak++; cursor -= DAY }
+  return streak
+}
+
+function computeGamification() {
+  const stats = store.get('stats') || {}
+  const lifetimeFocus = Object.keys(stats).reduce((s, d) => s + (stats[d].focusMinutes || 0), 0)
+  const bonus = (store.get('activityLog') || []).reduce((s, a) => s + (a.points || 0), 0)
+  const points = Math.round(lifetimeFocus) + bonus
+  const settings = store.get('settings') || {}
+  const goalBlocks = settings.dailyGoalBlocks || 5
+  const workTodayMin = (sessionManager.getStatus().workTodayMs || 0) / 60000
+  const todayKey = store.getTodayKey()
+  const wins = (store.get('todayList') || []).filter(t => t.date === todayKey && t.done).map(t => t.text)
+  return {
+    points,
+    level: Math.floor(points / POINTS_PER_LEVEL) + 1,
+    xpInLevel: points % POINTS_PER_LEVEL,
+    xpForLevel: POINTS_PER_LEVEL,
+    dayStreak: computeDayStreak(stats),
+    blocksDone: Math.floor(workTodayMin / BLOCK_MIN),
+    goalBlocks,
+    wins
+  }
+}
+
+// Append an event and push fresh gamification + activity to the dashboard.
+function logActivity(entry) {
+  store.pushActivity(entry)
+  windowManager.sendToDashboard('activity-update', (store.get('activityLog') || []).slice(0, 12))
+  windowManager.sendToDashboard('gamification-update', computeGamification())
 }
 
 function setupIpcHandlers() {
@@ -202,6 +254,7 @@ function setupIpcHandlers() {
       sessionManager.endWork()
       flashMood('celebrate', 4000)
       windowManager.sendToOverlay('quote-show', 'great work today!! so proud 🎉')
+      logActivity({ icon: '🏁', text: 'Wrapped a work session', points: 0 })
     }
   })
 
@@ -243,11 +296,13 @@ function setupIpcHandlers() {
         // Whole list cleared → crown celebration
         flashMood('celebrate', 5000)
         windowManager.sendToOverlay('quote-show', 'ALL DONE! you legend 🎉')
+        logActivity({ icon: '🎉', text: "Cleared today's list!", points: 20 })
       } else {
         // One task done → the "complete" pose (both ears flopped)
         flashMood('complete', 3000)
         const quote = quoteEngine.getQuote('task-complete')
         windowManager.sendToOverlay('quote-show', quote || 'nice one! ✓')
+        logActivity({ icon: '✅', text: 'Done: ' + item.text, points: 5 })
       }
       windowManager.sendToOverlay('open-panel')
     }
@@ -267,11 +322,14 @@ function setupIpcHandlers() {
     return task
   })
   ipcMain.handle('complete-task', (_, id) => {
+    const task = taskManager.getTasks().find(t => t.id === id)
+    const wasDone = task ? task.done : true
     const ok = taskManager.completeTask(id)
     if (ok) {
       const quote = quoteEngine.getQuote('task-complete')
       if (quote) windowManager.sendToOverlay('quote-show', quote)
       flashMood('happy', 3000)
+      if (task && !wasDone) logActivity({ icon: '✅', text: 'Finished: ' + task.name, points: xpForTask(task) })
     }
     windowManager.sendToDashboard('tasks-update', taskManager.getTasks())
     return ok
@@ -284,6 +342,10 @@ function setupIpcHandlers() {
 
   // ── Stats ──
   ipcMain.handle('get-stats', () => sessionTracker.getTodayStats())
+
+  // ── Gamification ──
+  ipcMain.handle('get-gamification', () => computeGamification())
+  ipcMain.handle('get-activity', () => (store.get('activityLog') || []).slice(0, 12))
 
   // ── Lists / settings ──
   ipcMain.handle('get-lists', () => ({

@@ -448,15 +448,15 @@ body{
     <div class="header-chips">
       <div class="chip chip-streak" title="Consecutive focus days">
         <span class="chip-ico">🔥</span>
-        <span class="chip-num pixel">7</span>
+        <span class="chip-num pixel" id="streak-count">0</span>
       </div>
       <div class="chip chip-xp" title="Focus points">
-        <span class="chip-num pixel" id="xp-count">1,240</span>
+        <span class="chip-num pixel" id="xp-count">0</span>
         <span class="chip-label">pts</span>
       </div>
       <div class="chip chip-level" title="Level">
         <span class="chip-label">Lv</span>
-        <span class="chip-num pixel">5</span>
+        <span class="chip-num pixel" id="level-count">1</span>
       </div>
     </div>
   </header>
@@ -480,21 +480,11 @@ body{
           <h2 class="section-title">Today's Focus</h2>
           <p class="section-sub">Sessions completed today</p>
         </div>
-        <div class="hero-count"><b class="pixel">3</b> / 5 blocks</div>
+        <div class="hero-count" id="hero-count"><b class="pixel">0</b> / 5 blocks</div>
       </div>
-      <div class="seg-bar" role="img" aria-label="3 of 5 focus blocks complete">
-        <span class="seg filled"></span>
-        <span class="seg filled"></span>
-        <span class="seg filled"></span>
-        <span class="seg"></span>
-        <span class="seg"></span>
-      </div>
-      <div class="momentum"><span class="spark">✨</span>2 more blocks to hit today's goal!</div>
-      <div class="wins">
-        <span class="win-chip"><span class="wc">✓</span>Morning deep work</span>
-        <span class="win-chip"><span class="wc">✓</span>Inbox zero</span>
-        <span class="win-chip"><span class="wc">✓</span>Design review</span>
-      </div>
+      <div class="seg-bar" id="seg-bar" role="img" aria-label="focus blocks today"></div>
+      <div class="momentum" id="momentum"><span class="spark">✨</span>Start a work session to fill your day.</div>
+      <div class="wins" id="wins" style="display:none;"></div>
     </div>
 
     <!-- Task list (rendered by renderTasks) -->
@@ -611,11 +601,7 @@ body{
     <div class="card">
       <h2 class="section-title">Recent activity</h2>
       <p class="section-sub" style="margin-bottom:12px;">Same dots and chips you see on tasks.</p>
-      <div class="activity">
-        <div class="act-row"><span class="meta-dot"></span>Finished a focus block<span class="win-chip"><span class="wc">✓</span>+15 pts</span></div>
-        <div class="act-row"><span class="meta-dot" style="background:var(--amber);"></span>Snoozed “Write report”<span class="win-chip"><span class="wc">✓</span>+0 pts</span></div>
-        <div class="act-row"><span class="meta-dot"></span>Hit a 7-day streak<span class="win-chip"><span class="wc">✓</span>+50 pts</span></div>
-      </div>
+      <div class="activity" id="activity"></div>
     </div>
 
     <div class="card">
@@ -672,7 +658,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name))
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `panel-${name}`))
-  if (name === 'stats') refreshStats()
+  if (name === 'stats') { refreshStats(); refreshGamification(); refreshActivity() }
 }
 
 window.mochi.onSwitchTab(name => switchTab(name))
@@ -687,6 +673,8 @@ async function init() {
   renderTags('quotes', 'quote-tags')
   await renderTasks()
   await refreshStats()
+  await refreshGamification()
+  await refreshActivity()
 
   // Startup toggle is a checkbox — reflect the real OS state.
   startupEnabled = await window.mochi.getStartupStatus()
@@ -742,6 +730,7 @@ async function renderTasks(tasks){
 
     const emoji = pickEmoji(t);
     const checkGlyph = t.done ? '✓' : '';
+    const xp = Math.max(5, Math.min(60, Math.round(t.durationMinutes || 10)));
 
     return (
       '<div class="task ' + urg + (t.done ? ' done' : '') + '" data-id="' + escHtml(String(t.id)) + '">' +
@@ -756,7 +745,7 @@ async function renderTasks(tasks){
             '<span class="meta-duration">' + durTxt + '</span>' +
             '<span class="meta-sep">•</span>' +
             '<span class="' + deadlineCls + '">' + deadlineTxt + '</span>' +
-            '<span class="xp-pill">+15 XP</span>' +
+            '<span class="xp-pill">+' + xp + ' XP</span>' +
           '</div>' +
         '</div>' +
         '<div class="task-actions">' +
@@ -802,6 +791,8 @@ document.getElementById('task-name').addEventListener('keydown', (e) => {
 })
 
 window.mochi.onTasksUpdate(tasks => renderTasks(tasks))
+window.mochi.onGamificationUpdate(g => renderGamification(g))
+window.mochi.onActivityUpdate(a => renderActivity(a))
 
 // ── Tag lists ──────────────────────────────────────────────────────
 function renderTags(listKey, containerId){
@@ -869,6 +860,69 @@ async function refreshStats() {
   document.getElementById('stat-distract').textContent = stats.distractionMinutes || 0
   document.getElementById('stat-streak').textContent = Math.round(stats.currentStreak || 0)
   document.getElementById('stat-longest').textContent = Math.round(stats.longestStreak || 0)
+}
+
+// ── Gamification (streak / points / level / focus blocks / wins) ────
+async function refreshGamification() {
+  renderGamification(await window.mochi.getGamification())
+}
+
+function renderGamification(g) {
+  if (!g) return
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val }
+  set('streak-count', g.dayStreak || 0)
+  set('xp-count', (g.points || 0).toLocaleString())
+  set('level-count', g.level || 1)
+
+  const hc = document.getElementById('hero-count')
+  if (hc) hc.innerHTML = '<b class="pixel">' + (g.blocksDone || 0) + '</b> / ' + (g.goalBlocks || 5) + ' blocks'
+
+  const bar = document.getElementById('seg-bar')
+  if (bar) {
+    const total = Math.max(g.goalBlocks || 5, g.blocksDone || 0)
+    let html = ''
+    for (let i = 0; i < total; i++) html += '<span class="seg' + (i < (g.blocksDone || 0) ? ' filled' : '') + '"></span>'
+    bar.innerHTML = html
+    bar.setAttribute('aria-label', (g.blocksDone || 0) + ' of ' + (g.goalBlocks || 5) + ' focus blocks complete')
+  }
+
+  const mo = document.getElementById('momentum')
+  if (mo) {
+    let msg
+    if ((g.blocksDone || 0) >= (g.goalBlocks || 5)) msg = "Daily goal smashed — incredible! 🎉"
+    else if (!g.blocksDone) msg = "Start a work session to fill your day."
+    else { const left = (g.goalBlocks || 5) - g.blocksDone; msg = left + ' more block' + (left > 1 ? 's' : '') + " to hit today's goal!" }
+    mo.innerHTML = '<span class="spark">✨</span>' + escHtml(msg)
+  }
+
+  const wins = document.getElementById('wins')
+  if (wins) {
+    if (!g.wins || g.wins.length === 0) { wins.style.display = 'none'; wins.innerHTML = '' }
+    else {
+      wins.style.display = ''
+      wins.innerHTML = g.wins.map(w => '<span class="win-chip"><span class="wc">✓</span>' + escHtml(w) + '</span>').join('')
+    }
+  }
+}
+
+async function refreshActivity() {
+  renderActivity(await window.mochi.getActivity())
+}
+
+function renderActivity(list) {
+  const el = document.getElementById('activity')
+  if (!el) return
+  if (!list || list.length === 0) {
+    el.innerHTML = '<div class="act-row" style="color:var(--muted);">No activity yet — complete a task to get started.</div>'
+    return
+  }
+  el.innerHTML = list.map(function (a) {
+    const icon = a.icon || '•'
+    const pts = (a.points && a.points > 0)
+      ? '<span class="win-chip"><span class="wc">✓</span>+' + a.points + ' pts</span>'
+      : ''
+    return '<div class="act-row"><span class="meta-dot"></span>' + icon + ' ' + escHtml(a.text || '') + pts + '</div>'
+  }).join('')
 }
 
 // ── Settings ───────────────────────────────────────────────────────

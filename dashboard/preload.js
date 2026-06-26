@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld('mochi', {
   // Stats
   getStats: () => ipcRenderer.invoke('get-stats'),
 
+  // Gamification
+  getGamification: () => ipcRenderer.invoke('get-gamification'),
+  getActivity: () => ipcRenderer.invoke('get-activity'),
+
   // Lists
   getLists: () => ipcRenderer.invoke('get-lists'),
   updateLists: (lists) => ipcRenderer.invoke('update-lists', lists),
@@ -21,5 +25,7 @@ contextBridge.exposeInMainWorld('mochi', {
   // Receive from main
   onTasksUpdate: (cb) => ipcRenderer.on('tasks-update', (_, tasks) => cb(tasks)),
   onStatsUpdate: (cb) => ipcRenderer.on('stats-update', (_, stats) => cb(stats)),
+  onGamificationUpdate: (cb) => ipcRenderer.on('gamification-update', (_, g) => cb(g)),
+  onActivityUpdate: (cb) => ipcRenderer.on('activity-update', (_, a) => cb(a)),
   onSwitchTab: (cb) => ipcRenderer.on('switch-tab', (_, tab) => cb(tab))
 })
