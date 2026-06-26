@@ -17,7 +17,7 @@ class WindowManager {
     const taskbarTop = wa.y + wa.height
     const SINK = 30
     const WIN_W = 320
-    const WIN_H = 520
+    const WIN_H = 700
     const x = wa.x + 6
     const y = taskbarTop + SINK - WIN_H
 
