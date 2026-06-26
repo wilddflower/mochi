@@ -4,43 +4,43 @@
 <meta charset="utf-8">
 <title>Mochi Dashboard</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Pixelify+Sans:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Nunito:wght@600;700;800&family=Pixelify+Sans:wght@500;700&display=swap');
 
 /* ========== Soft Focus — Mochi dashboard ========== */
 :root{
-  --pink:#A89CE6;
-  --pink-deep:#9385DE;
-  --pink-deeper:#8576CE;
-  --pink-darkest:#6E62B8;
-  --page:#F6F5FA;
+  --pink:#4E77B5;
+  --pink-deep:#3E608F;
+  --pink-deeper:#3E608F;
+  --pink-darkest:#3E608F;
+  --page:#FFFFFF;
   --card:#FFFFFF;
-  --border:#ECEAF3;
-  --mint:#9FD8C0;
-  --mint-2:#B7E2CF;
-  --mint-strong:#6FC2A0;
-  --amber:#E0A23C;
-  --red:#D9647E;
-  --plum:#2E2B3A;
-  --plum-body:#45424F;
-  --muted:#908AA0;
-  --soft-empty:#E7E4F1;     /* empty progress segment */
-  --shadow:0 8px 22px rgba(120,110,180,.08);
-  --shadow-sm:0 4px 12px rgba(120,110,180,.06);
-  --radius-lg:22px;
-  --radius-md:18px;
-  --radius-sm:14px;
+  --border:#ECECEE;
+  --mint:#34C759;
+  --mint-2:#5FD37E;
+  --mint-strong:#34C759;
+  --amber:#FF9500;
+  --red:#FF3B30;
+  --plum:#1A1A1A;
+  --plum-body:#3A3A3C;
+  --muted:#8A8A8E;
+  --soft-empty:#ECECEE;     /* empty progress segment */
+  --shadow:none;
+  --shadow-sm:none;
+  --radius-lg:4px;
+  --radius-md:3px;
+  --radius-sm:2px;
 }
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
-  font-family:'Nunito',system-ui,-apple-system,sans-serif;
+  font-family:'Space Mono','Consolas',monospace;
   background:var(--page);
   color:var(--plum-body);
-  font-weight:600;
+  font-weight:400;
   -webkit-font-smoothing:antialiased;
-  font-size:15px;
-  line-height:1.4;
+  font-size:14px;
+  line-height:1.45;
 }
 .app{
   max-width:560px;
@@ -49,7 +49,7 @@ body{
 }
 
 /* Pixel font helper — gamified numbers only */
-.pixel{font-family:'Pixelify Sans',monospace;font-weight:700;letter-spacing:.5px;}
+.pixel{font-family:'Space Mono',monospace;font-weight:700;letter-spacing:-0.5px;font-variant-numeric:tabular-nums;}
 
 /* ========== Header band ========== */
 .header{
@@ -66,7 +66,7 @@ body{
 .bunny{
   width:46px;height:46px;flex:0 0 46px;
   border-radius:14px;
-  background:linear-gradient(160deg,#F1EEFB,#E7E2F6);
+  background:#F4F4F5;
   border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;
@@ -101,7 +101,7 @@ body{
   text-transform:uppercase;letter-spacing:.4px;line-height:1;
 }
 .chip-streak .chip-ico{filter:saturate(1.1);}
-.chip-xp{background:linear-gradient(180deg,#fff,#FBFAFD);}
+.chip-xp{background:#FFFFFF;}
 .chip-level{padding:6px 9px;}
 .chip-level .chip-num{font-size:14px;}
 
@@ -124,13 +124,13 @@ body{
   cursor:pointer;white-space:nowrap;
   transition:background .15s,color .15s,box-shadow .15s,transform .05s;
 }
-.tab:hover{background:#F1F0F6;}
+.tab:hover{background:#F4F4F5;}
 .tab:active{transform:translateY(1px);}
 .tab.active{
   background:var(--pink);
   color:var(--pink-darkest);
   border-color:var(--pink);
-  box-shadow:0 6px 14px rgba(120,110,180,.32);
+  box-shadow:none;
 }
 
 /* ========== Panels & cards ========== */
@@ -154,7 +154,7 @@ body{
 
 /* ========== Hero: Today's Focus (PulseBoard graft) ========== */
 .hero{
-  background:linear-gradient(180deg,#ffffff, #FBFAFD);
+  background:#FFFFFF;
   border:1px solid var(--border);
 }
 .hero-head{
@@ -260,7 +260,7 @@ body{
 /* +XP pill (Bounce graft) — neutral pink, never urgency colors */
 .xp-pill{
   display:inline-flex;align-items:center;gap:3px;
-  background:#EEEBFB;border:1px solid var(--border);
+  background:#EEF3FA;border:1px solid var(--border);
   color:var(--pink-darkest);
   border-radius:999px;padding:2px 8px;
   font-size:10.5px;font-weight:800;
@@ -275,7 +275,7 @@ body{
   display:flex;align-items:center;justify-content:center;
   transition:background .15s,color .15s;
 }
-.menu-btn:hover{background:#F1F0F6;color:var(--plum);}
+.menu-btn:hover{background:#F4F4F5;color:var(--plum);}
 
 /* completed reward state */
 .task.done{opacity:.85;}
@@ -305,7 +305,7 @@ body{
 .inp{
   width:100%;
   font-family:inherit;font-size:14px;font-weight:700;color:var(--plum);
-  background:#F4F2FA;
+  background:#F7F7F8;
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
   padding:11px 13px;
@@ -326,7 +326,7 @@ body{
   background:var(--pink);
   border-radius:999px;
   padding:11px 20px;
-  box-shadow:0 6px 14px rgba(120,110,180,.36);
+  box-shadow:none;
   transition:filter .15s,transform .05s;
   white-space:nowrap;
 }
@@ -351,7 +351,7 @@ body{
 .tags{display:flex;flex-wrap:wrap;gap:7px;min-height:8px;}
 .tag{
   display:inline-flex;align-items:center;gap:7px;
-  background:#F4F2FA;border:1px solid var(--border);
+  background:#F7F7F8;border:1px solid var(--border);
   color:var(--plum);font-weight:800;font-size:12.5px;
   border-radius:999px;padding:6px 8px 6px 12px;
 }
@@ -371,7 +371,7 @@ body{
   display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:4px;
 }
 .stat{
-  background:#F4F2FA;border:1px solid var(--border);
+  background:#F7F7F8;border:1px solid var(--border);
   border-radius:var(--radius-sm);padding:14px;
 }
 .stat .stat-val{
