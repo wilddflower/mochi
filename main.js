@@ -11,6 +11,12 @@ const QuoteEngine = require('./src/quote-engine')
 const AutoLaunch = require('./src/auto-launch')
 const { buildSpriteManifest } = require('./src/sprite-manifest')
 
+// The overlay is a transparent, always-on-top window. On Windows, GPU
+// compositing can fail to paint transparent windows at larger sizes (the
+// content goes invisible with no error) — forcing software compositing keeps
+// Mochi + the panel reliably visible. Must be called before app 'ready'.
+app.disableHardwareAcceleration()
+
 let store, windowManager, trayManager, windowMonitor, moodEngine
 let sessionTracker, sessionManager, taskManager, quoteEngine
 let blocking = false  // true while the full-screen lock-in blocker is up
