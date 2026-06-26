@@ -5,6 +5,7 @@ const WindowMonitor = require('./window-monitor')
 const MOODS = ['nagging', 'sleeping', 'angry', 'sad', 'focused', 'happy', 'encouraging']
 
 const DISTRACTION_ESCALATE_MS = 1 * 60 * 1000  // 1 min on a blocked site → Angry
+const DISTRACTION_BLOCK_MS = 5 * 60 * 1000     // 5 min on a distraction → full-screen lock-in
 const FOCUS_ESCALATE_MS = 10 * 60 * 1000        // 10 min → Focused
 const IDLE_THRESHOLD_MS = 30 * 1000              // 30s no change → Encouraging
 const MILESTONE_INTERVALS = [15, 30, 45, 60]    // minutes
@@ -23,6 +24,7 @@ class MoodEngine extends EventEmitter {
     this._lastClassification = 'neutral'
     this._lastWindowChangeTime = Date.now()
     this._distractionStartTime = null
+    this._blockEmitted = false
     this._focusStartTime = null
     this._distractionTimerTick = null
     this._idleTimer = null
@@ -66,7 +68,7 @@ class MoodEngine extends EventEmitter {
     this._lastClassification = classification
 
     if (classification === 'distraction') {
-      if (prev !== 'distraction') this._distractionStartTime = Date.now()
+      if (prev !== 'distraction') { this._distractionStartTime = Date.now(); this._blockEmitted = false }
       this._focusStartTime = null
     } else if (classification === 'productive') {
       if (prev !== 'productive') {
@@ -77,11 +79,13 @@ class MoodEngine extends EventEmitter {
       }
       if (this._distractionStartTime) this.emit('distraction-timer', 0)
       this._distractionStartTime = null
+      this._blockEmitted = false
     } else {
       // neutral
       this._focusStartTime = null
       if (this._distractionStartTime) this.emit('distraction-timer', 0)
       this._distractionStartTime = null
+      this._blockEmitted = false
     }
 
     this._recalculateMood()
@@ -90,6 +94,14 @@ class MoodEngine extends EventEmitter {
   setNagging(hasOverdue) {
     this._hasNagging = hasOverdue
     this._recalculateMood()
+  }
+
+  // Called when the user dismisses the full-screen blocker: restart the 5-min
+  // countdown so it doesn't instantly re-fire, but keep tracking (re-blocks if they stay).
+  resetDistraction() {
+    this._distractionStartTime = Date.now()
+    this._blockEmitted = false
+    this.emit('distraction-timer', 0)
   }
 
   _recalculateMood() {
@@ -144,10 +156,16 @@ class MoodEngine extends EventEmitter {
       if (this.paused || this._sessionState !== 'working') return
 
       if (this._lastClassification === 'distraction' && this._distractionStartTime) {
-        const elapsed = Math.floor((Date.now() - this._distractionStartTime) / 1000)
-        this.emit('distraction-timer', elapsed)
-        // Escalate sad → angry at the 5-min mark even with no window change.
+        const elapsedMs = Date.now() - this._distractionStartTime
+        this.emit('distraction-timer', Math.floor(elapsedMs / 1000))
+        // Escalate sad → angry at 1 min even with no window change.
         this._recalculateMood()
+        // Full-screen lock-in once past 5 min (once per distraction streak).
+        if (elapsedMs >= DISTRACTION_BLOCK_MS && !this._blockEmitted) {
+          this._blockEmitted = true
+          const info = this._lastWindowInfo || {}
+          this.emit('block-site', info.windowTitle || info.processName || 'that site')
+        }
       }
 
       // Focus milestones + happy → focused escalation

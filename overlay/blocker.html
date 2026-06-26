@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; width: 100%; }
+  body {
+    background: #1A1A1A;
+    color: #FFFFFF;
+    font-family: 'Space Mono', 'Consolas', monospace;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; user-select: none; cursor: default;
+  }
+  .wrap { text-align: center; max-width: 640px; padding: 40px; }
+  .bun { margin: 0 auto 30px; display: block; image-rendering: pixelated; }
+  .tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 3.5px; text-transform: uppercase;
+    color: #FF9500; margin-bottom: 22px;
+  }
+  h1 {
+    font-size: 52px; font-weight: 700; letter-spacing: -1.5px; line-height: 1.02;
+    margin-bottom: 18px;
+  }
+  .sub {
+    font-size: 15px; font-weight: 400; color: #9A9A9E; line-height: 1.65;
+    margin-bottom: 38px;
+  }
+  .site {
+    color: #FFFFFF; font-weight: 700;
+    border-bottom: 2px solid #FF9500; padding-bottom: 1px;
+    word-break: break-word;
+  }
+  .btn {
+    font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: #FFFFFF; background: #4E77B5;
+    border: none; border-radius: 3px; padding: 15px 36px; cursor: pointer;
+    transition: background .15s ease;
+  }
+  .btn:hover { background: #3E608F; }
+  .btn:active { transform: translateY(1px); }
+  .mins {
+    font-size: 11px; font-weight: 400; color: #6A6A6E; margin-top: 22px; letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <svg class="bun" width="72" height="84" viewBox="0 0 18 21" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="0" width="3" height="8" fill="#FFFFFF"/>
+      <rect x="11" y="0" width="3" height="8" fill="#4E77B5"/>
+      <rect x="3" y="7" width="12" height="12" fill="#FFFFFF"/>
+      <rect x="6" y="12" width="2" height="2" fill="#1A1A1A"/>
+      <rect x="10" y="12" width="2" height="2" fill="#1A1A1A"/>
+      <rect x="8" y="15" width="2" height="1" fill="#FF9500"/>
+    </svg>
+    <div class="tag">Mochi · Locked In</div>
+    <h1>back to work.</h1>
+    <div class="sub">you've been on <span class="site" id="site">that site</span> for 5 minutes straight during a work session.</div>
+    <button class="btn" id="dismiss">I'm refocusing &rarr;</button>
+    <div class="mins">mochi blocks again in 5 min if you stay</div>
+  </div>
+<script>
+  window.blocker.onInfo(name => {
+    if (name) document.getElementById('site').textContent = name
+  })
+  const dismiss = () => window.blocker.dismiss()
+  document.getElementById('dismiss').onclick = dismiss
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'Enter') dismiss() })
+</script>
+</body>
+</html>

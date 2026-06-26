@@ -6,6 +6,7 @@ class WindowManager {
     this.store = store
     this.overlayWindow = null
     this.dashboardWindow = null
+    this.blockerWindow = null
   }
 
   async createOverlay() {
@@ -78,6 +79,47 @@ class WindowManager {
       e.preventDefault()
       this.dashboardWindow.hide()
     })
+  }
+
+  // Full-screen "lock-in" blocker — covers the screen when the user has been
+  // on a distraction for 5+ min during a work session. Created hidden up front.
+  async createBlocker() {
+    const display = screen.getPrimaryDisplay()
+    const b = display.bounds
+    this.blockerWindow = new BrowserWindow({
+      x: b.x, y: b.y, width: b.width, height: b.height,
+      frame: false, show: false, alwaysOnTop: true, skipTaskbar: true,
+      resizable: false, movable: false, minimizable: false, fullscreenable: true,
+      webPreferences: {
+        preload: path.join(__dirname, '..', 'overlay', 'blocker-preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    })
+    this.blockerWindow.setAlwaysOnTop(true, 'screen-saver')
+    await this.blockerWindow.loadFile(path.join(__dirname, '..', 'overlay', 'blocker.html'))
+    this.blockerWindow.on('closed', () => { this.blockerWindow = null })
+  }
+
+  showBlocker(name) {
+    if (!this.blockerWindow || this.blockerWindow.isDestroyed()) return
+    this.blockerWindow.webContents.send('blocker-info', name)
+    // Re-cover the full primary display in case resolution changed.
+    const b = screen.getPrimaryDisplay().bounds
+    this.blockerWindow.setBounds({ x: b.x, y: b.y, width: b.width, height: b.height })
+    this.blockerWindow.setAlwaysOnTop(true, 'screen-saver')
+    this.blockerWindow.show()
+    this.blockerWindow.focus()
+  }
+
+  hideBlocker() {
+    if (this.blockerWindow && !this.blockerWindow.isDestroyed() && this.blockerWindow.isVisible()) {
+      this.blockerWindow.hide()
+    }
+  }
+
+  isBlockerVisible() {
+    return !!(this.blockerWindow && !this.blockerWindow.isDestroyed() && this.blockerWindow.isVisible())
   }
 
   showDashboard(tab) {

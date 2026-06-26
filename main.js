@@ -13,6 +13,7 @@ const { buildSpriteManifest } = require('./src/sprite-manifest')
 
 let store, windowManager, trayManager, windowMonitor, moodEngine
 let sessionTracker, sessionManager, taskManager, quoteEngine
+let blocking = false  // true while the full-screen lock-in blocker is up
 
 
 // Single-instance lock — auto-launch and the login Startup shortcut can both try
@@ -40,11 +41,14 @@ app.whenReady().then(async () => {
 
   await windowManager.createOverlay()
   await windowManager.createDashboard()
+  await windowManager.createBlocker()
   trayManager = new TrayManager(windowManager, store, (paused) => {
     // Tray pause/resume must actually quiet the engine — not just flip a flag.
     if (paused) {
       moodEngine.pause()
       if (windowMonitor) windowMonitor.pause()
+      blocking = false
+      windowManager.hideBlocker()
       windowManager.sendToOverlay('distraction-timer-update', 0)
       windowManager.sendToOverlay('mood-changed', { mood: 'encouraging' })
     } else {
@@ -57,6 +61,7 @@ app.whenReady().then(async () => {
   // Window monitor → mood engine (only while a work session is active)
   windowMonitor = new WindowMonitor(store)
   windowMonitor.on('foreground-changed', (info) => {
+    if (blocking) return // blocker is up (and is itself the foreground app) — ignore until dismissed
     if (sessionManager.state === 'working' && !store.get('settings.paused')) {
       moodEngine.onWindowChanged(info)
       // Caught on a blocked site → pop up even if Ctrl+M-hidden; restore when off.
@@ -93,10 +98,19 @@ app.whenReady().then(async () => {
     windowManager.sendToOverlay('distraction-timer-update', seconds)
   })
 
+  // 5 min on a distraction during a work session → full-screen lock-in.
+  moodEngine.on('block-site', (name) => {
+    if (sessionManager.state !== 'working' || store.get('settings.paused')) return
+    blocking = true
+    windowManager.showBlocker(name)
+  })
+
   // Session manager → mood engine + overlay
   sessionManager.on('state-changed', (status) => {
     moodEngine.setSessionState(status.state)
     windowManager.sendToOverlay('session-status', status)
+    // Leaving work mode (break / end) clears any active lock-in.
+    if (status.state !== 'working' && blocking) { blocking = false; windowManager.hideBlocker() }
 
     if (status.state === 'working' && !status.forced) {
       const quote = quoteEngine.getQuote('start')
@@ -239,6 +253,13 @@ function setupIpcHandlers() {
   // ── Session controls ──
   ipcMain.on('session-start-work', () => sessionManager.startWork())
   ipcMain.on('session-take-break', () => sessionManager.takeBreak())
+
+  // Full-screen blocker dismissed → hide it and restart the 5-min countdown.
+  ipcMain.on('blocker-dismiss', () => {
+    blocking = false
+    windowManager.hideBlocker()
+    moodEngine.resetDistraction()
+  })
 
   // End Work: if the to-do list isn't done, get annoyed and demand a reason
   // before ending. Otherwise end happily.
