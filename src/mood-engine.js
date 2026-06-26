@@ -114,8 +114,9 @@ class MoodEngine extends EventEmitter {
   }
 
   _computeMood() {
-    // Outside an active work session, Mochi is calm and never nags.
-    if (this._sessionState === 'idle') return 'encouraging'
+    // Outside an active work session, Mochi is calm and never nags — and sleeps
+    // outside the user's focus hours.
+    if (this._sessionState === 'idle') return this._isAsleep() ? 'sleeping' : 'encouraging'
     if (this._sessionState === 'break') return 'happy'
 
     if (this._hasNagging) return 'nagging'
@@ -135,15 +136,23 @@ class MoodEngine extends EventEmitter {
     return 'encouraging'
   }
 
+  // Asleep when the current hour is outside the user's focus hours.
+  _isAsleep() {
+    const s = this.store.get('settings') || {}
+    const start = Number.isFinite(s.activeHoursStart) ? s.activeHoursStart : 9
+    const end = Number.isFinite(s.activeHoursEnd) ? s.activeHoursEnd : 22
+    if (start === end) return false
+    const h = new Date().getHours()
+    if (start < end) return h < start || h >= end          // normal daytime window
+    return h >= end && h < start                            // overnight window (e.g. 22–6)
+  }
+
   _startIdleTimer() {
     this._idleTimer = setInterval(() => {
       if (this.paused) return
-      // Only go idle when classification is already neutral (desktop, lock screen, unknown app).
-      // Staying on a productive or distraction app for a long time without switching is not "idle".
-      if (this._lastClassification === 'neutral' &&
-          Date.now() - this._lastWindowChangeTime >= IDLE_THRESHOLD_MS) {
-        this._recalculateMood()
-      }
+      // Recalculate every few seconds so (a) neutral idle settles to a calm mood
+      // and (b) sleep/wake takes effect when the focus-hours boundary passes.
+      this._recalculateMood()
     }, 5000)
   }
 

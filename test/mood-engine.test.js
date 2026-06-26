@@ -8,7 +8,7 @@ function makeStore(overrides = {}) {
     distractionApps: ['discord.exe'],
     productiveSites: ['github.com'],
     distractionSites: ['youtube.com'],
-    settings: { activeHoursStart: 0, activeHoursEnd: 23, paused: false },
+    settings: { activeHoursStart: 0, activeHoursEnd: 24, paused: false },
     ...overrides
   }
   return {

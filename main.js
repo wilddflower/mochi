@@ -53,6 +53,7 @@ app.whenReady().then(async () => {
     if (paused) {
       moodEngine.pause()
       if (windowMonitor) windowMonitor.pause()
+      sessionManager.setDistracted(false) // stop draining break while paused
       blocking = false
       windowManager.hideBlocker()
       windowManager.sendToOverlay('distraction-timer-update', 0)
@@ -70,8 +71,11 @@ app.whenReady().then(async () => {
     if (blocking) return // blocker is up (and is itself the foreground app) — ignore until dismissed
     if (sessionManager.state === 'working' && !store.get('settings.paused')) {
       moodEngine.onWindowChanged(info)
+      const distraction = WindowMonitor.classify(info, store) === 'distraction'
+      // Distraction pauses the work clock + drains the break budget.
+      sessionManager.setDistracted(distraction)
       // Caught on a blocked site → pop up even if Ctrl+M-hidden; restore when off.
-      if (WindowMonitor.classify(info, store) === 'distraction') {
+      if (distraction) {
         windowManager.forceShow()
       } else {
         windowManager.restoreUserPreference()
@@ -280,23 +284,28 @@ function setupIpcHandlers() {
     } else {
       sessionManager.endWork()
       flashMood('celebrate', 4000)
-      windowManager.sendToOverlay('quote-show', 'great work today!! so proud 🎉')
-      logActivity({ icon: '🏁', text: 'Wrapped a work session', points: 0 })
+      const d = Math.round(sessionManager.getSessionDistractedMinutes())
+      windowManager.sendToOverlay('quote-show', d >= 1
+        ? `great work!! 🎉 ${d} min distracted this session — that came off your break`
+        : 'great work today!! zero distractions 🎉')
+      logActivity({ icon: '🏁', text: 'Wrapped a session · ' + d + ' min distracted', points: 0 })
     }
   })
 
   // Reason submitted from the End Work prompt → log it and end the session.
   ipcMain.on('work-reason', (_, reason) => {
+    const distractedMin = Math.round(sessionManager.getSessionDistractedMinutes())
     const log = store.get('workLog') || []
     log.push({
       date: store.getTodayKey(),
       at: new Date().toISOString(),
       reason: String(reason || '').trim(),
-      unfinished: getTodayList().filter(t => !t.done).map(t => t.text)
+      unfinished: getTodayList().filter(t => !t.done).map(t => t.text),
+      distractedMin
     })
     store.set('workLog', log)
     sessionManager.endWork()
-    windowManager.sendToOverlay('quote-show', '...fine. logged it. 👀 do better tmrw')
+    windowManager.sendToOverlay('quote-show', `...fine. logged it. 👀 ${distractedMin} min distracted today — do better tmrw`)
   })
 
   // ── Today list ──
