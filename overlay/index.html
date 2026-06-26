@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Pixelify+Sans:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Nunito:wght@400;600;700;800&family=Pixelify+Sans:wght@400;600&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* ── Shared design tokens (Lavender Calm) ─────────────── */
+  /* ── Shared design tokens (Mono · Bright White · Apple) ── */
   :root {
-    --bg: #F6F5FA; --surface: #FBFAFD; --card: #FFFFFF; --border: #ECEAF3;
-    --accent: #A89CE6; --accent-deep: #6E62B8; --accent-tint: #EEEBFB; --neutral-tint: #F1F0F6;
-    --track: #E7E4F1; --text: #2E2B3A; --muted: #908AA0; --hint: #B6B1C4;
-    --check-border: #DAD6E6; --del: #C9C5D6;
-    --mint: #9FD8C0; --mint-deep: #4F9E82; --rose: #F0B7C2; --amber: #F2D29C;
+    --bg: #FFFFFF; --surface: #FFFFFF; --card: #FFFFFF; --border: #ECECEE;
+    --accent: #4E77B5; --accent-deep: #3E608F; --accent-tint: #EEF3FA; --neutral-tint: #FFFFFF;
+    --track: #ECECEE; --text: #1A1A1A; --muted: #8A8A8E; --hint: #C7C7CC;
+    --check-border: #1A1A1A; --del: #C7C7CC; --rule: #1A1A1A;
+    --mint: #34C759; --mint-deep: #2BA34A; --rose: #FF3B30; --amber: #FF9500;
   }
   body {
     width: 320px;
@@ -41,16 +41,16 @@
     left: 8px;
     width: 268px;
     max-height: 410px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 22px;
-    box-shadow: 0 14px 40px rgba(120, 110, 180, 0.16);
+    background: #FFFFFF;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
     padding: 16px;
     color: var(--text);
-    font-family: 'Nunito', -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Space Mono', monospace;
     display: flex;
     flex-direction: column;
-    gap: 13px;
+    gap: 12px;
     opacity: 0;
     transform: translateY(10px) scale(0.98);
     pointer-events: none;
@@ -63,103 +63,101 @@
     pointer-events: auto;
   }
 
-  .panel-greeting { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
-  .panel-status   { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: -6px; letter-spacing: -0.1px; }
+  .masthead { display: flex; justify-content: space-between; align-items: center;
+              border-bottom: 1px solid var(--rule); padding-bottom: 8px;
+              font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text); }
+  .masthead span:last-child { color: var(--muted); font-weight: 400; letter-spacing: 1px; }
+  .panel-greeting { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+  .panel-status   { font-size: 10px; font-weight: 400; color: var(--muted); margin-top: 3px; letter-spacing: 0; }
 
   /* Clock + break stat cards */
-  .badges { display: flex; gap: 9px; }
-  .badge {
-    flex: 1; text-align: center; padding: 12px 4px;
-    border-radius: 16px;
-    background: var(--card);
-    border: 1px solid var(--border);
-  }
-  .badge .num { font-size: 19px; font-weight: 700; color: var(--text); letter-spacing: -0.4px; line-height: 1; font-variant-numeric: tabular-nums; }
-  .badge .lbl { font-size: 8.5px; font-weight: 700; color: var(--hint); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 5px; }
+  .badges { display: flex; align-items: stretch; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .badge { padding: 10px 12px 11px 0; }
+  .badge:first-child { flex: 1.5; }
+  .badge:last-child { flex: 1; padding: 10px 0 11px 12px; border-left: 1px solid var(--rule); }
+  .badge .lbl { font-size: 8px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+  .badge .num { font-size: 34px; font-weight: 700; color: var(--text); letter-spacing: -1.5px; line-height: 1; font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .badge:last-child .num { font-size: 18px; letter-spacing: -0.5px; color: var(--amber); margin-top: 10px; }
 
   /* Controls */
-  .controls { display: flex; gap: 8px; }
+  .controls { display: flex; border: 1px solid var(--rule); }
   .btn {
-    flex: 1; padding: 12px 6px; border: none; border-radius: 14px;
-    font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
-    transition: transform .12s ease, filter .15s ease;
+    flex: 1; padding: 11px 6px; border: none; border-radius: 0;
+    font-family: inherit; font-size: 10px; font-weight: 700; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 1px;
+    transition: background .12s ease, color .12s ease;
   }
-  .btn:hover { filter: brightness(1.04); transform: translateY(-1px); }
-  .btn:active { transform: translateY(0); }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; filter: none; transform: none; }
-  .btn-work, .btn-back {
-    background: var(--accent); color: #ffffff;
-    box-shadow: 0 5px 14px rgba(120, 110, 180, 0.28);
-  }
-  .btn-break { background: var(--accent-tint); color: var(--accent-deep); }
-  .btn-end   { background: var(--neutral-tint); color: var(--muted); }
+  .btn + .btn { border-left: 1px solid var(--rule); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-work, .btn-back { background: var(--accent); color: #ffffff; }
+  .btn-work:hover, .btn-back:hover { background: var(--accent-deep); }
+  .btn-break { background: #ffffff; color: var(--text); }
+  .btn-end   { background: #ffffff; color: var(--muted); }
+  .btn-break:hover, .btn-end:hover { background: var(--accent-tint); color: var(--accent); }
 
   /* End-Work reason prompt */
   #reason-box { display: none; flex-direction: column; gap: 8px;
-                background: var(--card); border: 1px solid var(--border);
-                border-radius: 16px; padding: 12px; }
+                background: #FFFFFF; border: 1px solid var(--rule);
+                border-radius: 0; padding: 12px; }
   #reason-box.show { display: flex; }
-  #reason-box .rt { font-size: 12px; font-weight: 800; color: var(--text); }
-  #reason-box input { border: 1px solid var(--border); border-radius: 12px;
-                      padding: 9px 11px; font-family: inherit; font-size: 12.5px; font-weight: 600;
-                      outline: none; background: var(--surface); color: var(--text); }
+  #reason-box .rt { font-size: 11px; font-weight: 700; color: var(--text); }
+  #reason-box input { border: none; border-bottom: 1px solid var(--rule); border-radius: 0;
+                      padding: 6px 2px; font-family: inherit; font-size: 12px; font-weight: 400;
+                      outline: none; background: none; color: var(--text); }
   #reason-box input:focus { border-color: var(--accent); }
 
   /* Today list */
-  .today-head { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .today-head { font-size: 9px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 1.5px; }
 
-  /* Completion progress — segmented */
-  .today-progress { display: flex; flex-direction: column; gap: 6px; }
+  /* Completion — ticks + ratio */
+  .today-progress { display: flex; align-items: center; gap: 9px; }
   .today-progress.empty-prog { display: none; }
-  .today-progress .pbar { display: flex; gap: 5px; }
-  .today-progress .seg { flex: 1; height: 8px; border-radius: 7px; background: var(--track); }
-  .today-progress .seg.done { background: var(--accent); }
-  .today-progress .plabel { font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: -0.1px; }
+  .today-progress .pbar { display: flex; gap: 3px; flex: 1; }
+  .today-progress .seg { flex: 1; height: 5px; border-radius: 0; background: var(--track); }
+  .today-progress .seg.done { background: var(--mint); }
+  .today-progress .plabel { font-size: 9px; font-weight: 700; color: var(--mint-deep); letter-spacing: 0.5px; text-transform: uppercase; font-variant-numeric: tabular-nums; }
 
-  #today-items { display: flex; flex-direction: column; gap: 7px;
-                 overflow-y: auto; max-height: 152px; padding-right: 2px; }
-  #today-items::-webkit-scrollbar { width: 5px; }
-  #today-items::-webkit-scrollbar-thumb { background: rgba(120,110,180,0.22); border-radius: 3px; }
+  #today-items { display: flex; flex-direction: column;
+                 overflow-y: auto; max-height: 150px; }
+  #today-items::-webkit-scrollbar { width: 4px; }
+  #today-items::-webkit-scrollbar-thumb { background: rgba(26,26,26,0.18); border-radius: 0; }
 
   .todo {
-    position: relative; overflow: hidden;
     display: flex; align-items: center; gap: 10px;
-    padding: 11px 11px 11px 16px; border-radius: 14px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.1px;
+    padding: 8px 4px; border-radius: 0;
+    background: none; border: none; border-top: 1px solid var(--border);
+    font-size: 11.5px; font-weight: 400; color: var(--text); letter-spacing: 0;
+    transition: background 0.12s;
   }
-  .todo::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
-  .todo.acc-red::before   { background: var(--rose); }
-  .todo.acc-amber::before { background: var(--amber); }
-  .todo.acc-green::before { background: var(--accent); }
-  .todo.done::before { background: var(--mint); }
+  .todo:hover { background: var(--accent-tint); }
+  .todo::before { content: none; }
   .todo .box {
-    width: 19px; height: 19px; border-radius: 7px; border: 2px solid var(--check-border);
+    width: 14px; height: 14px; border-radius: 0; border: 1.5px solid var(--check-border);
     flex-shrink: 0; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 12px; color: #fff;
-    background: #fff; transition: all 0.15s;
+    justify-content: center; font-size: 9px; color: #fff;
+    background: none; transition: all 0.15s;
   }
   .todo.done .box { background: var(--mint); border-color: var(--mint); }
-  .todo.done .txt { text-decoration: line-through; color: var(--hint); font-weight: 600; }
+  .todo.done .txt { text-decoration: line-through; color: var(--hint); font-weight: 400; }
   .todo .txt { flex: 1; word-break: break-word; }
-  .todo .del { cursor: pointer; color: var(--del); font-size: 17px; line-height: 1; transition: color 0.15s; }
+  .todo .del { cursor: pointer; color: var(--del); font-size: 14px; line-height: 1; transition: color 0.15s; }
   .todo .del:hover { color: var(--rose); }
 
-  .add-row { display: flex; gap: 8px; }
+  .add-row { display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--rule); padding-top: 10px; }
   .add-row input {
-    flex: 1; border: 1px solid var(--border); border-radius: 14px;
-    padding: 11px 13px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text);
-    outline: none; background: var(--card);
+    order: 2;
+    flex: 1; border: none; border-bottom: 1px solid var(--border); border-radius: 0;
+    padding: 5px 2px; font-family: inherit; font-size: 11.5px; font-weight: 400; color: var(--text);
+    outline: none; background: none;
   }
-  .add-row input::placeholder { color: var(--hint); font-weight: 600; }
-  .add-row input:focus { border-color: var(--accent); background: #fff; }
+  .add-row input::placeholder { color: var(--hint); font-weight: 400; }
+  .add-row input:focus { border-color: var(--accent); }
   .add-row button {
-    border: none; background: var(--accent); color: #ffffff;
-    border-radius: 14px; padding: 0 17px; font-size: 20px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 4px 12px rgba(120,110,180,0.24);
+    order: 1;
+    border: none; background: none; color: var(--accent);
+    border-radius: 0; padding: 0 2px; font-size: 18px; font-weight: 700; cursor: pointer; line-height: 1;
   }
-  .empty { font-size: 12.5px; color: var(--hint); text-align: center; padding: 12px; font-weight: 600; }
+  .empty { font-size: 11px; color: var(--hint); text-align: left; padding: 10px 0; font-weight: 400; }
 
   /* Panel tail pointing to Mochi */
   #panel::after {
@@ -273,12 +271,13 @@
 
   <!-- Pop-out panel -->
   <div id="panel">
-    <div class="panel-greeting" id="greeting">hi pavni 🐰</div>
+    <div class="masthead"><span>Mochi</span><span>Session</span></div>
+    <div class="panel-greeting" id="greeting">hi pavni</div>
     <div class="panel-status" id="status-line">ready to start a work session?</div>
 
     <div class="badges">
-      <div class="badge"><div class="num" id="work-clock">0:00</div><div class="lbl">work</div></div>
-      <div class="badge"><div class="num" id="break-left">4h 0m</div><div class="lbl">break left</div></div>
+      <div class="badge"><div class="lbl">01 — Work</div><div class="num" id="work-clock">0:00</div></div>
+      <div class="badge"><div class="lbl">02 — Break</div><div class="num" id="break-left">4h 0m</div></div>
     </div>
 
     <div class="controls" id="controls"></div>
@@ -481,15 +480,15 @@ function renderControls(status) {
   } else if (s === 'working') {
     const disabled = status.breakAllowed ? '' : 'disabled'
     controlsEl.innerHTML =
-      '<button class="btn btn-break" id="c-break" ' + disabled + '>☕ Break</button>' +
-      '<button class="btn btn-end" id="c-end">⏹ End Work</button>'
+      '<button class="btn btn-break" id="c-break" ' + disabled + '>Break</button>' +
+      '<button class="btn btn-end" id="c-end">End Work</button>'
     const b = document.getElementById('c-break')
     if (b && status.breakAllowed) b.onclick = () => window.mochi.takeBreak()
     document.getElementById('c-end').onclick = () => window.mochi.endWork()
   } else if (s === 'break') {
     controlsEl.innerHTML =
       '<button class="btn btn-back" id="c-back">▶ Back to Work</button>' +
-      '<button class="btn btn-end" id="c-end">⏹ End Work</button>'
+      '<button class="btn btn-end" id="c-end">End Work</button>'
     document.getElementById('c-back').onclick = () => window.mochi.startWork()
     document.getElementById('c-end').onclick = () => window.mochi.endWork()
   }
@@ -504,9 +503,9 @@ function renderStatus(status) {
   if (status.state === 'idle') {
     statusLine.textContent = 'ready to start a work session?'
   } else if (status.state === 'working') {
-    statusLine.textContent = status.breakAllowed ? "you're in work mode — lock in 💪" : "no breaks left — keep going!"
+    statusLine.textContent = status.breakAllowed ? "you're in work mode — lock in" : "no breaks left — keep going"
   } else if (status.state === 'break') {
-    statusLine.textContent = 'on a break ☕ enjoy (then come back!)'
+    statusLine.textContent = 'on a break — enjoy, then come back'
   }
   renderControls(status)
 }
