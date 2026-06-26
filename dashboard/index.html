@@ -8,24 +8,24 @@
 
 /* ========== Soft Focus — Mochi dashboard ========== */
 :root{
-  --pink:#ffb6c1;
-  --pink-deep:#f29cbe;
-  --pink-deeper:#e87d92;
-  --pink-darkest:#a0294a;
-  --page:#fdf6f8;
-  --card:#ffffff;
-  --border:#e8d0d8;
-  --mint:#6ec79a;
-  --mint-2:#7ccfa3;
-  --mint-strong:#2ecc71;
-  --amber:#f6b73c;
-  --red:#e74c3c;
-  --plum:#443d4c;
-  --plum-body:#5b4a63;
-  --muted:#9a93a6;
-  --soft-empty:#f6dde6;     /* soft-pink empty segment */
-  --shadow:0 8px 22px rgba(160,41,74,.06);
-  --shadow-sm:0 4px 12px rgba(160,41,74,.05);
+  --pink:#A89CE6;
+  --pink-deep:#9385DE;
+  --pink-deeper:#8576CE;
+  --pink-darkest:#6E62B8;
+  --page:#F6F5FA;
+  --card:#FFFFFF;
+  --border:#ECEAF3;
+  --mint:#9FD8C0;
+  --mint-2:#B7E2CF;
+  --mint-strong:#6FC2A0;
+  --amber:#E0A23C;
+  --red:#D9647E;
+  --plum:#2E2B3A;
+  --plum-body:#45424F;
+  --muted:#908AA0;
+  --soft-empty:#E7E4F1;     /* empty progress segment */
+  --shadow:0 8px 22px rgba(120,110,180,.08);
+  --shadow-sm:0 4px 12px rgba(120,110,180,.06);
   --radius-lg:22px;
   --radius-md:18px;
   --radius-sm:14px;
@@ -66,7 +66,7 @@ body{
 .bunny{
   width:46px;height:46px;flex:0 0 46px;
   border-radius:14px;
-  background:linear-gradient(160deg,#fff0f5,#ffe1ea);
+  background:linear-gradient(160deg,#F1EEFB,#E7E2F6);
   border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;
@@ -101,7 +101,7 @@ body{
   text-transform:uppercase;letter-spacing:.4px;line-height:1;
 }
 .chip-streak .chip-ico{filter:saturate(1.1);}
-.chip-xp{background:linear-gradient(180deg,#fff,#fff5f8);}
+.chip-xp{background:linear-gradient(180deg,#fff,#FBFAFD);}
 .chip-level{padding:6px 9px;}
 .chip-level .chip-num{font-size:14px;}
 
@@ -124,13 +124,13 @@ body{
   cursor:pointer;white-space:nowrap;
   transition:background .15s,color .15s,box-shadow .15s,transform .05s;
 }
-.tab:hover{background:#fff0f4;}
+.tab:hover{background:#F1F0F6;}
 .tab:active{transform:translateY(1px);}
 .tab.active{
   background:var(--pink);
   color:var(--pink-darkest);
   border-color:var(--pink);
-  box-shadow:0 6px 14px rgba(255,182,193,.45);
+  box-shadow:0 6px 14px rgba(120,110,180,.32);
 }
 
 /* ========== Panels & cards ========== */
@@ -154,7 +154,7 @@ body{
 
 /* ========== Hero: Today's Focus (PulseBoard graft) ========== */
 .hero{
-  background:linear-gradient(180deg,#ffffff, #fffafc);
+  background:linear-gradient(180deg,#ffffff, #FBFAFD);
   border:1px solid var(--border);
 }
 .hero-head{
@@ -260,7 +260,7 @@ body{
 /* +XP pill (Bounce graft) — neutral pink, never urgency colors */
 .xp-pill{
   display:inline-flex;align-items:center;gap:3px;
-  background:#fff0f5;border:1px solid var(--border);
+  background:#EEEBFB;border:1px solid var(--border);
   color:var(--pink-darkest);
   border-radius:999px;padding:2px 8px;
   font-size:10.5px;font-weight:800;
@@ -275,7 +275,7 @@ body{
   display:flex;align-items:center;justify-content:center;
   transition:background .15s,color .15s;
 }
-.menu-btn:hover{background:#fbeef3;color:var(--plum);}
+.menu-btn:hover{background:#F1F0F6;color:var(--plum);}
 
 /* completed reward state */
 .task.done{opacity:.85;}
@@ -305,7 +305,7 @@ body{
 .inp{
   width:100%;
   font-family:inherit;font-size:14px;font-weight:700;color:var(--plum);
-  background:#fbf3f6;
+  background:#F4F2FA;
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
   padding:11px 13px;
@@ -326,7 +326,7 @@ body{
   background:var(--pink);
   border-radius:999px;
   padding:11px 20px;
-  box-shadow:0 6px 14px rgba(255,182,193,.5);
+  box-shadow:0 6px 14px rgba(120,110,180,.36);
   transition:filter .15s,transform .05s;
   white-space:nowrap;
 }
@@ -351,7 +351,7 @@ body{
 .tags{display:flex;flex-wrap:wrap;gap:7px;min-height:8px;}
 .tag{
   display:inline-flex;align-items:center;gap:7px;
-  background:#fbf3f6;border:1px solid var(--border);
+  background:#F4F2FA;border:1px solid var(--border);
   color:var(--plum);font-weight:800;font-size:12.5px;
   border-radius:999px;padding:6px 8px 6px 12px;
 }
@@ -371,7 +371,7 @@ body{
   display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:4px;
 }
 .stat{
-  background:#fbf3f6;border:1px solid var(--border);
+  background:#F4F2FA;border:1px solid var(--border);
   border-radius:var(--radius-sm);padding:14px;
 }
 .stat .stat-val{
