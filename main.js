@@ -377,7 +377,11 @@ function setupIpcHandlers() {
   ipcMain.handle('get-tasks', () => taskManager.getTasks())
 
   // ── Stats ──
-  ipcMain.handle('get-stats', () => sessionTracker.getTodayStats())
+  ipcMain.handle('get-stats', () => {
+    const s = sessionTracker.getTodayStats()
+    // Use the break-draining distraction accounting for "distracted today".
+    return { ...s, distractionMinutes: Math.round(sessionManager.getDistractedTodayMinutes()) }
+  })
 
   // ── Gamification ──
   ipcMain.handle('get-gamification', () => computeGamification())

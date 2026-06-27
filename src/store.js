@@ -61,6 +61,7 @@ const DEFAULTS = {
   todayList: [],          // simple daily checklist: { id, text, done, date }
   dailyBreak: {},         // { date: 'YYYY-MM-DD', minutesUsed: number }
   dailyWork: {},          // { date: 'YYYY-MM-DD', minutesUsed: number } — cumulative work clock
+  dailyDistracted: {},    // { date: 'YYYY-MM-DD', minutesUsed: number } — distracted time today
   workLog: [],            // [{ date, at, reason, unfinished[] }] — End Work reasons
   activityLog: [],        // [{ at, icon, text, points }] — recent gamified events, newest first
   settings: {

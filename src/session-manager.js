@@ -135,9 +135,14 @@ class SessionManager extends EventEmitter {
     if (!this._distractedStartedAt) return
     const ms = Date.now() - this._distractedStartedAt
     this._sessionDistractedMs += ms
+    // Distraction drains the break budget...
     const db = this.store.get('dailyBreak') || {}
     const base = db.date === this._today() ? (db.minutesUsed || 0) : 0
     this.store.set('dailyBreak', { date: this._today(), minutesUsed: base + ms / 60000 })
+    // ...and accumulates a daily distracted total for the dashboard.
+    const dd = this.store.get('dailyDistracted') || {}
+    const dbase = dd.date === this._today() ? (dd.minutesUsed || 0) : 0
+    this.store.set('dailyDistracted', { date: this._today(), minutesUsed: dbase + ms / 60000 })
     this._distractedStartedAt = null
   }
 
@@ -146,6 +151,14 @@ class SessionManager extends EventEmitter {
     let ms = this._sessionDistractedMs
     if (this.distracted && this._distractedStartedAt) ms += Date.now() - this._distractedStartedAt
     return ms / 60000
+  }
+
+  // Total distracted minutes today (banked + any live segment).
+  getDistractedTodayMinutes() {
+    const dd = this.store.get('dailyDistracted') || {}
+    let m = dd.date === this._today() ? (dd.minutesUsed || 0) : 0
+    if (this.distracted && this._distractedStartedAt) m += (Date.now() - this._distractedStartedAt) / 60000
+    return m
   }
 
   _onTick() {
