@@ -166,10 +166,14 @@ app.whenReady().then(async () => {
   sessionTracker.checkDateRollover()
 
   // Global hotkey: show/hide Mochi entirely
-  const hotkeyOk = globalShortcut.register('CommandOrControl+M', () => {
-    windowManager.toggleOverlayVisibility()
-  })
-  if (!hotkeyOk) console.error('[hotkey] Ctrl+M registration failed (already in use)')
+  // Toggle Mochi's visibility. Bind several accelerators so a conflict on one
+  // (another app already owns Ctrl+M, etc.) still leaves a working shortcut.
+  // The tray's "Show/Hide Mochi" item is the can't-be-intercepted fallback.
+  const toggleViz = () => windowManager.toggleOverlayVisibility()
+  const registered = ['CommandOrControl+M', 'CommandOrControl+Shift+M', 'Alt+Shift+M']
+    .filter(k => { try { return globalShortcut.register(k, toggleViz) } catch { return false } })
+  if (registered.length) console.log('[hotkey] toggle bound to:', registered.join(', '))
+  else console.error('[hotkey] no toggle shortcut could be registered — use the tray menu')
 
   await AutoLaunch.enableIfFirstRun(store)
 })

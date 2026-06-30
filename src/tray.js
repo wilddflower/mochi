@@ -28,8 +28,14 @@ class TrayManager {
 
   _buildMenu() {
     const paused = this.store.get('settings.paused')
+    const ov = this.windowManager.getOverlayWindow()
+    const mochiVisible = !!(ov && !ov.isDestroyed() && ov.isVisible())
     const menu = Menu.buildFromTemplate([
       { label: '📋 Dashboard', click: () => this.windowManager.showDashboard() },
+      {
+        label: mochiVisible ? '🙈  Hide Mochi' : '🐰  Show Mochi',
+        click: () => { this.windowManager.toggleOverlayVisibility(); this._buildMenu() }
+      },
       {
         label: paused ? '▶  Resume Mochi' : '⏸  Pause Mochi',
         click: () => this._togglePause()
