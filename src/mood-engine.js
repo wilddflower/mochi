@@ -6,6 +6,7 @@ const MOODS = ['nagging', 'sleeping', 'angry', 'sad', 'focused', 'happy', 'encou
 
 const DISTRACTION_ESCALATE_MS = 1 * 60 * 1000  // 1 min on a blocked site → Angry
 const DISTRACTION_BLOCK_MS = 5 * 60 * 1000     // 5 min on a distraction → full-screen lock-in
+const DISTRACTION_GRACE_MS = 30 * 1000         // brief hops away (< this) don't reset the streak
 const FOCUS_ESCALATE_MS = 10 * 60 * 1000        // 10 min → Focused
 const IDLE_THRESHOLD_MS = 30 * 1000              // 30s no change → Encouraging
 const MILESTONE_INTERVALS = [15, 30, 45, 60]    // minutes
@@ -23,7 +24,9 @@ class MoodEngine extends EventEmitter {
     this._lastWindowInfo = null
     this._lastClassification = 'neutral'
     this._lastWindowChangeTime = Date.now()
-    this._distractionStartTime = null
+    this._distractionSince = null    // start of the current continuous distraction segment
+    this._distractionAccumMs = 0     // banked ms from earlier segments in this streak
+    this._lastDistractionAt = null   // last time we saw a distraction (grace anchor)
     this._blockEmitted = false
     this._focusStartTime = null
     this._distractionTimerTick = null
@@ -41,7 +44,7 @@ class MoodEngine extends EventEmitter {
     this.paused = true
     // Drop in-flight focus/distraction streaks so resuming starts clean
     // (otherwise a stale distraction timer keeps escalating after resume).
-    this._distractionStartTime = null
+    this._clearDistraction()
     this._focusStartTime = null
   }
   resume() { this.paused = false; this._recalculateMood() }
@@ -50,7 +53,7 @@ class MoodEngine extends EventEmitter {
     this._sessionState = state
     if (state !== 'working') {
       // Leaving work mode: stop tracking focus/distraction timers.
-      this._distractionStartTime = null
+      this._clearDistraction()
       this._focusStartTime = null
       this._lastClassification = 'neutral'
     }
@@ -67,25 +70,33 @@ class MoodEngine extends EventEmitter {
     const prev = this._lastClassification
     this._lastClassification = classification
 
+    const now = Date.now()
     if (classification === 'distraction') {
-      if (prev !== 'distraction') { this._distractionStartTime = Date.now(); this._blockEmitted = false }
+      if (!this._distractionSince) {
+        // Start (or resume) a streak. A brief hop away — under the grace window —
+        // keeps the accumulated time; a real absence starts from zero. This makes
+        // the 5-min blocker reliable: tab flickers, quick alt-tabs, and clicking
+        // Mochi herself no longer zero the countdown.
+        if (!this._lastDistractionAt || now - this._lastDistractionAt > DISTRACTION_GRACE_MS) {
+          this._distractionAccumMs = 0
+          this._blockEmitted = false
+        }
+        this._distractionSince = now
+      }
+      this._lastDistractionAt = now
       this._focusStartTime = null
     } else if (classification === 'productive') {
       if (prev !== 'productive') {
         // Fresh focus streak → restart milestone tracking
-        this._focusStartTime = Date.now()
+        this._focusStartTime = now
         this._nextMilestone = MILESTONE_INTERVALS[0]
         this._milestoneMinutes = 0
       }
-      if (this._distractionStartTime) this.emit('distraction-timer', 0)
-      this._distractionStartTime = null
-      this._blockEmitted = false
+      this._pauseDistractionSegment()
     } else {
       // neutral
       this._focusStartTime = null
-      if (this._distractionStartTime) this.emit('distraction-timer', 0)
-      this._distractionStartTime = null
-      this._blockEmitted = false
+      this._pauseDistractionSegment()
     }
 
     this._recalculateMood()
@@ -99,9 +110,37 @@ class MoodEngine extends EventEmitter {
   // Called when the user dismisses the full-screen blocker: restart the 5-min
   // countdown so it doesn't instantly re-fire, but keep tracking (re-blocks if they stay).
   resetDistraction() {
-    this._distractionStartTime = Date.now()
+    this._distractionAccumMs = 0
+    this._distractionSince = this._lastClassification === 'distraction' ? Date.now() : null
+    this._lastDistractionAt = this._distractionSince
     this._blockEmitted = false
     this.emit('distraction-timer', 0)
+  }
+
+  // Total distraction time in the current streak (banked + live segment).
+  _distractionElapsedMs() {
+    let ms = this._distractionAccumMs
+    if (this._distractionSince) ms += Date.now() - this._distractionSince
+    return ms
+  }
+
+  // Leaving a distraction: bank the live segment (grace may resume it) and hide the timer.
+  _pauseDistractionSegment() {
+    if (this._distractionSince) {
+      this._distractionAccumMs += Date.now() - this._distractionSince
+      this._distractionSince = null
+      // Grace is measured from when the user LEFT the distraction, not when the
+      // streak started — anchor it here or the expiry check fires mid-blip.
+      this._lastDistractionAt = Date.now()
+      this.emit('distraction-timer', 0)
+    }
+  }
+
+  _clearDistraction() {
+    this._distractionSince = null
+    this._distractionAccumMs = 0
+    this._lastDistractionAt = null
+    this._blockEmitted = false
   }
 
   _recalculateMood() {
@@ -121,9 +160,8 @@ class MoodEngine extends EventEmitter {
 
     if (this._hasNagging) return 'nagging'
 
-    if (this._lastClassification === 'distraction' && this._distractionStartTime) {
-      const elapsed = Date.now() - this._distractionStartTime
-      if (elapsed >= DISTRACTION_ESCALATE_MS) return 'angry'
+    if (this._lastClassification === 'distraction' && (this._distractionSince || this._distractionAccumMs > 0)) {
+      if (this._distractionElapsedMs() >= DISTRACTION_ESCALATE_MS) return 'angry'
       return 'sad'
     }
 
@@ -164,17 +202,22 @@ class MoodEngine extends EventEmitter {
     this._distractionTimerTick = setInterval(() => {
       if (this.paused || this._sessionState !== 'working') return
 
-      if (this._lastClassification === 'distraction' && this._distractionStartTime) {
-        const elapsedMs = Date.now() - this._distractionStartTime
+      if (this._lastClassification === 'distraction' && this._distractionSince) {
+        const elapsedMs = this._distractionElapsedMs()
         this.emit('distraction-timer', Math.floor(elapsedMs / 1000))
         // Escalate sad → angry at 1 min even with no window change.
         this._recalculateMood()
-        // Full-screen lock-in once past 5 min (once per distraction streak).
+        // Full-screen lock-in once past 5 min (accumulated across the streak).
         if (elapsedMs >= DISTRACTION_BLOCK_MS && !this._blockEmitted) {
           this._blockEmitted = true
           const info = this._lastWindowInfo || {}
           this.emit('block-site', info.windowTitle || info.processName || 'that site')
         }
+      } else if (this._distractionAccumMs > 0 && this._lastDistractionAt &&
+                 Date.now() - this._lastDistractionAt > DISTRACTION_GRACE_MS) {
+        // Grace expired without returning to the distraction — streak is over.
+        this._clearDistraction()
+        this._recalculateMood()
       }
 
       // Focus milestones + happy → focused escalation

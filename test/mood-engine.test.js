@@ -208,3 +208,64 @@ describe('WindowMonitor.classify — site/app matching', () => {
     expect(WindowMonitor.classify({ processName: 'chrome', windowTitle: 'youtube.com - github.com' }, s)).toBe('distraction')
   })
 })
+
+describe('MoodEngine — distraction streak grace (5-min blocker reliability)', () => {
+  let store, engine
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    store = makeStore()
+    engine = new MoodEngine(store)
+    engine.setSessionState('working')
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+    if (engine._idleTimer) clearInterval(engine._idleTimer)
+    if (engine._distractionTimerTick) clearInterval(engine._distractionTimerTick)
+  })
+
+  const DISCORD = { processName: 'Discord', windowTitle: 'Discord' }
+  const CODE = { processName: 'Code', windowTitle: 'main.js' }
+
+  test('a brief hop away does NOT reset the streak — blocker still fires at 5 min accumulated', () => {
+    const blocks = []
+    engine.on('block-site', (n) => blocks.push(n))
+
+    engine.onWindowChanged(DISCORD)
+    jest.advanceTimersByTime(3 * 60 * 1000)   // 3 min on the distraction
+    engine.onWindowChanged(CODE)              // quick hop away (e.g. clicked Mochi / tab flicker)
+    jest.advanceTimersByTime(10 * 1000)       // 10s — inside the grace window
+    engine.onWindowChanged(DISCORD)           // back to the distraction
+    jest.advanceTimersByTime(2 * 60 * 1000 + 5000) // +2min → >5min accumulated
+
+    expect(blocks.length).toBe(1)
+  })
+
+  test('a sustained absence DOES reset the streak — no premature block', () => {
+    const blocks = []
+    engine.on('block-site', (n) => blocks.push(n))
+
+    engine.onWindowChanged(DISCORD)
+    jest.advanceTimersByTime(4 * 60 * 1000)   // 4 min on the distraction
+    engine.onWindowChanged(CODE)
+    jest.advanceTimersByTime(60 * 1000)       // 60s away — grace expired, streak over
+    engine.onWindowChanged(DISCORD)
+    jest.advanceTimersByTime(2 * 60 * 1000)   // only 2 min into the NEW streak
+
+    expect(blocks.length).toBe(0)
+  })
+
+  test('blocker fires only once per streak, and resetDistraction() re-arms it', () => {
+    const blocks = []
+    engine.on('block-site', (n) => blocks.push(n))
+
+    engine.onWindowChanged(DISCORD)
+    jest.advanceTimersByTime(6 * 60 * 1000)   // well past 5 min → one block
+    expect(blocks.length).toBe(1)
+
+    engine.resetDistraction()                  // user dismissed the blocker
+    jest.advanceTimersByTime(6 * 60 * 1000)   // stayed on the site → blocks again
+    expect(blocks.length).toBe(2)
+  })
+})

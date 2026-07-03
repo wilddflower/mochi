@@ -14,9 +14,10 @@
     --check-border: #1A1A1A; --del: #C7C7CC; --rule: #1A1A1A;
     --mint: #34C759; --mint-deep: #2BA34A; --rose: #FF3B30; --amber: #FF9500;
   }
+  html { height: 100%; }
   body {
     width: 320px;
-    height: 700px;
+    height: 100%;  /* track the real window height — Windows may clamp it below our request */
     background: transparent;
     overflow: hidden;
     user-select: none;
@@ -25,7 +26,7 @@
 
   #container {
     width: 320px;
-    height: 700px;
+    height: 100%;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -40,7 +41,9 @@
     bottom: 162px;
     left: 8px;
     width: 268px;
-    max-height: 510px;
+    max-height: calc(100vh - 190px);  /* always fits between Mochi (bottom 162px) and the window top */
+    overflow-y: auto;
+    scrollbar-width: thin;
     background: #FFFFFF;
     border: 1px solid var(--rule);
     border-radius: 4px;
@@ -62,6 +65,9 @@
     transform: translateY(0) scale(1);
     pointer-events: auto;
   }
+  #panel::-webkit-scrollbar { width: 4px; }
+  #panel::-webkit-scrollbar-thumb { background: rgba(26,26,26,0.18); }
+  #panel::-webkit-scrollbar-button { display: none; }
 
   .masthead { display: flex; justify-content: space-between; align-items: center;
               border-bottom: 1px solid var(--rule); padding-bottom: 8px;

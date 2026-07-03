@@ -88,3 +88,18 @@ describe('WindowMonitor.classify — comprehensive matching', () => {
     })
   })
 })
+
+describe('WindowMonitor.classify — X/Twitter title suffix', () => {
+  test('"Home / X" matches x.com (domain never appears in X titles)', () => {
+    const s = makeStore({ distractionSites: ['x.com'] })
+    expect(WindowMonitor.classify({ processName: 'chrome', windowTitle: 'Home / X' }, s)).toBe('distraction')
+  })
+  test('"(2) Post / X" matches twitter.com too', () => {
+    const s = makeStore()
+    expect(WindowMonitor.classify({ processName: 'chrome', windowTitle: '(2) Post / X' }, s)).toBe('distraction')
+  })
+  test('titles merely ending in x are NOT matched (no false positives)', () => {
+    const s = makeStore({ distractionSites: ['x.com'] })
+    expect(WindowMonitor.classify({ processName: 'chrome', windowTitle: 'Firefox' }, s)).toBe('neutral')
+  })
+})

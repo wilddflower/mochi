@@ -27,6 +27,11 @@ Write-Host "MOCHI_READY"
 `
 
 function matchSiteInTitle(site, title) {
+  const s = site.toLowerCase()
+  // X/Twitter never put their domain in window titles — tabs read "Home / X",
+  // "Post / X", etc. The generic name-part rule can't help either ("x" is too
+  // short to match safely), so match the "… / X" suffix explicitly.
+  if ((s === 'x.com' || s === 'twitter.com') && /\/ x$/i.test(title.trim())) return true
   const escaped = site.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   if (new RegExp(`\\b${escaped}\\b`, 'i').test(title)) return true
   // Also match the domain name without TLD — "youtube.com" → "youtube"

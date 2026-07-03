@@ -67,19 +67,25 @@ app.whenReady().then(async () => {
 
   // Window monitor → mood engine (only while a work session is active)
   windowMonitor = new WindowMonitor(store)
+  let lastForegroundClass = null
   windowMonitor.on('foreground-changed', (info) => {
     if (blocking) return // blocker is up (and is itself the foreground app) — ignore until dismissed
     if (sessionManager.state === 'working' && !store.get('settings.paused')) {
       moodEngine.onWindowChanged(info)
-      const distraction = WindowMonitor.classify(info, store) === 'distraction'
+      const cls = WindowMonitor.classify(info, store)
       // Distraction pauses the work clock + drains the break budget.
-      sessionManager.setDistracted(distraction)
-      // Caught on a blocked site → pop up even if Ctrl+M-hidden; restore when off.
-      if (distraction) {
-        windowManager.forceShow()
-      } else {
-        windowManager.restoreUserPreference()
+      sessionManager.setDistracted(cls === 'distraction')
+      // Pop up / restore ONLY on classification transitions. The monitor emits on
+      // every 2.5s poll — reacting every time made forceShow() fight the user's
+      // Ctrl+M hide (Mochi reappeared within 2.5s: "the toggle doesn't work").
+      if (cls !== lastForegroundClass) {
+        if (cls === 'distraction') {
+          windowManager.forceShow()
+        } else {
+          windowManager.restoreUserPreference()
+        }
       }
+      lastForegroundClass = cls
     }
   })
   windowMonitor.start()
@@ -169,7 +175,10 @@ app.whenReady().then(async () => {
   // Toggle Mochi's visibility. Bind several accelerators so a conflict on one
   // (another app already owns Ctrl+M, etc.) still leaves a working shortcut.
   // The tray's "Show/Hide Mochi" item is the can't-be-intercepted fallback.
-  const toggleViz = () => windowManager.toggleOverlayVisibility()
+  const toggleViz = () => {
+    windowManager.toggleOverlayVisibility()
+    if (trayManager) trayManager.updatePauseLabel() // keep the tray Show/Hide label in sync
+  }
   const registered = ['CommandOrControl+M', 'CommandOrControl+Shift+M', 'Alt+Shift+M']
     .filter(k => { try { return globalShortcut.register(k, toggleViz) } catch { return false } })
   if (registered.length) console.log('[hotkey] toggle bound to:', registered.join(', '))

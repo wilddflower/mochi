@@ -18,7 +18,10 @@ class WindowManager {
     const taskbarTop = wa.y + wa.height
     const SINK = 30
     const WIN_W = 320
-    const WIN_H = 700
+    // Never exceed the work area: Windows clamps a non-resizable window's height
+    // to workArea.height (silently — the DOM then renders past the window edge and
+    // Mochi's feet get cut off; seen on 1280x720@150%, workArea 672 < 700).
+    const WIN_H = Math.min(700, wa.height)
     const x = wa.x + 6
     const y = taskbarTop + SINK - WIN_H
 
@@ -48,6 +51,14 @@ class WindowManager {
       })
     }
     await this.overlayWindow.loadFile(path.join(__dirname, '..', 'overlay', 'index.html'))
+
+    if (process.env.MOCHI_DEBUG) {
+      console.log('[overlay-diag] display bounds=', JSON.stringify(display.bounds),
+        'workArea=', JSON.stringify(wa), 'scale=', display.scaleFactor)
+      console.log('[overlay-diag] requested=', JSON.stringify({ x, y, width: WIN_W, height: WIN_H }),
+        'actual=', JSON.stringify(this.overlayWindow.getBounds()),
+        'visible=', this.overlayWindow.isVisible())
+    }
 
     this.overlayWindow.on('closed', () => { this.overlayWindow = null })
 
@@ -137,6 +148,10 @@ class WindowManager {
   // User pressed Ctrl+M — toggle and remember their preference.
   toggleOverlayVisibility() {
     if (!this.overlayWindow || this.overlayWindow.isDestroyed()) return
+    if (process.env.MOCHI_DEBUG) {
+      console.log('[toggle-diag] visible(before)=', this.overlayWindow.isVisible(),
+        'userHidden=', this.userHidden, 'bounds=', JSON.stringify(this.overlayWindow.getBounds()))
+    }
     if (this.overlayWindow.isVisible()) {
       this.userHidden = true
       this.overlayWindow.hide()
