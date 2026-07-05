@@ -87,6 +87,21 @@ class MochiStore {
     // lists into whatever's already saved (deduped), so existing installs pick up
     // the new content without losing custom entries or resurrecting deleted ones.
     this._seedContent()
+    this._seedContentV2()
+  }
+
+  // Second content wave: the full distraction block catalog (games, streaming,
+  // shopping, doomscroll sites + time-sink apps). Same union-and-dedupe rules.
+  _seedContentV2() {
+    const settings = this.get('settings') || {}
+    if (settings.seededContentV2) return
+    const SEED2 = require('./blocklist.json')
+    for (const k of ['distractionApps', 'distractionSites']) {
+      const current = this.get(k) || []
+      const merged = Array.from(new Set([...current, ...(SEED2[k] || [])]))
+      this.set(k, merged)
+    }
+    this.set('settings', { ...this.get('settings'), seededContentV2: true })
   }
 
   _seedContent() {

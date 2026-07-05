@@ -20,6 +20,8 @@ app.disableHardwareAcceleration()
 let store, windowManager, trayManager, windowMonitor, moodEngine
 let sessionTracker, sessionManager, taskManager, quoteEngine
 let blocking = false  // true while the full-screen lock-in blocker is up
+let reasonAttempts = 0   // End-Work excuse gauntlet: Mochi rejects the first two
+let reasonExcuses = []   // ...and logs every excuse she was given
 
 
 // Single-instance lock — auto-launch and the login Startup shortcut can both try
@@ -274,7 +276,20 @@ function setupIpcHandlers() {
   })
 
   // ── Session controls ──
-  ipcMain.on('session-start-work', () => sessionManager.startWork())
+  // No fresh session without a plan: at least one unfinished item on today's
+  // list before Start Work. (Resuming from a break is exempt — flow > nagging.)
+  ipcMain.on('session-start-work', () => {
+    const unfinished = getTodayList().filter(t => !t.done)
+    if (sessionManager.state === 'idle' && unfinished.length === 0) {
+      windowManager.forceShow()
+      windowManager.sendToOverlay('open-panel')
+      flashMood('nagging', 4000)
+      windowManager.sendToOverlay('quote-show', "nope. write down what you're fixing today first 📝 then we lock in")
+      windowManager.sendToOverlay('focus-todo')
+      return
+    }
+    sessionManager.startWork()
+  })
   ipcMain.on('session-take-break', () => sessionManager.takeBreak())
 
   // Full-screen blocker dismissed → hide it and restart the 5-min countdown.
@@ -289,6 +304,8 @@ function setupIpcHandlers() {
   ipcMain.on('session-end-work', () => {
     const unfinished = getTodayList().filter(t => !t.done)
     if (unfinished.length > 0) {
+      reasonAttempts = 0
+      reasonExcuses = []
       windowManager.forceShow()
       flashMood('angry', 6000)
       windowManager.sendToOverlay('quote-show',
@@ -305,20 +322,42 @@ function setupIpcHandlers() {
     }
   })
 
-  // Reason submitted from the End Work prompt → log it and end the session.
+  // End-Work excuse gauntlet: Mochi does NOT accept the first excuse. She pushes
+  // back twice (with escalating sass) before reluctantly letting you go — and
+  // every excuse you gave gets written into the work log.
   ipcMain.on('work-reason', (_, reason) => {
+    const text = String(reason || '').trim()
+    const unfinished = getTodayList().filter(t => !t.done)
+    reasonAttempts++
+    reasonExcuses.push(text)
+
+    if (reasonAttempts < 3) {
+      windowManager.forceShow()
+      flashMood('angry', 5000)
+      const n = unfinished.length
+      const sass = reasonAttempts === 1
+        ? `"${text.slice(0, 40)}"?? that's an excuse, not a reason 😤 try again`
+        : `still not buying it. ${n} thing${n === 1 ? '' : 's'} left. one more try — convince me 👀`
+      windowManager.sendToOverlay('reason-rejected', sass)
+      return
+    }
+
     const distractedMin = Math.round(sessionManager.getSessionDistractedMinutes())
     const log = store.get('workLog') || []
     log.push({
       date: store.getTodayKey(),
       at: new Date().toISOString(),
-      reason: String(reason || '').trim(),
-      unfinished: getTodayList().filter(t => !t.done).map(t => t.text),
+      reason: text,
+      excuses: reasonExcuses.slice(),
+      unfinished: unfinished.map(t => t.text),
       distractedMin
     })
     store.set('workLog', log)
+    reasonAttempts = 0
+    reasonExcuses = []
     sessionManager.endWork()
-    windowManager.sendToOverlay('quote-show', `...fine. logged it. 👀 ${distractedMin} min distracted today — do better tmrw`)
+    windowManager.sendToOverlay('quote-show',
+      `UGH. fine. 😤 all 3 excuses are in the log + ${distractedMin} min distracted. tmrw we do better.`)
   })
 
   // ── Today list ──

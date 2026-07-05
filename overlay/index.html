@@ -606,6 +606,21 @@ window.mochi.onAskReason(items => {
   reasonInput.focus()
 })
 
+// Mochi rejected the excuse — re-open the prompt with her pushback.
+window.mochi.onReasonRejected(msg => {
+  reasonText.textContent = msg
+  reasonBox.classList.add('show')
+  openPanel()
+  reasonInput.value = ''
+  reasonInput.focus()
+})
+
+// Start Work refused until something's written down — point at the input.
+window.mochi.onFocusTodo(() => {
+  openPanel()
+  todoInput.focus()
+})
+
 window.mochi.onDistractionTimer(seconds => {
   if (seconds <= 0) { timer.classList.remove('visible'); return }
   const m = Math.floor(seconds / 60), s = seconds % 60

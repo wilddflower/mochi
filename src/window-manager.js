@@ -16,7 +16,10 @@ class WindowManager {
     const display = screen.getPrimaryDisplay()
     const wa = display.workArea
     const taskbarTop = wa.y + wa.height
-    const SINK = 30
+    // SINK = 0: her feet rest exactly ON the taskbar's top edge. Sinking into the
+    // taskbar region z-fights the (topmost) taskbar, which draws over her feet —
+    // that read as "she's hidden / not sitting on top".
+    const SINK = 0
     const WIN_W = 320
     // Never exceed the work area: Windows clamps a non-resizable window's height
     // to workArea.height (silently — the DOM then renders past the window edge and
@@ -60,7 +63,18 @@ class WindowManager {
         'visible=', this.overlayWindow.isVisible())
     }
 
-    this.overlayWindow.on('closed', () => { this.overlayWindow = null })
+    // Notifications/toasts and the taskbar periodically steal topmost on Windows;
+    // quietly re-assert so Mochi stays above everything (doesn't steal focus).
+    this._topmostTimer = setInterval(() => {
+      if (this.overlayWindow && !this.overlayWindow.isDestroyed() && this.overlayWindow.isVisible()) {
+        this.overlayWindow.setAlwaysOnTop(true, 'screen-saver')
+      }
+    }, 5000)
+
+    this.overlayWindow.on('closed', () => {
+      if (this._topmostTimer) { clearInterval(this._topmostTimer); this._topmostTimer = null }
+      this.overlayWindow = null
+    })
 
     // Auto-recreate on renderer crash
     this.overlayWindow.webContents.on('render-process-gone', () => {

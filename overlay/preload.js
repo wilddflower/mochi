@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld('mochi', {
   endWork: () => ipcRenderer.send('session-end-work'),
   submitReason: (reason) => ipcRenderer.send('work-reason', reason),
   onAskReason: (cb) => ipcRenderer.on('ask-reason', (_, items) => cb(items)),
+  onReasonRejected: (cb) => ipcRenderer.on('reason-rejected', (_, msg) => cb(msg)),
+  onFocusTodo: (cb) => ipcRenderer.on('focus-todo', () => cb()),
 
   // Today list
   addTodo: (text) => ipcRenderer.send('today-add', text),
