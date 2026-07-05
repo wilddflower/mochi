@@ -62,6 +62,10 @@ const DEFAULTS = {
   dailyBreak: {},         // { date: 'YYYY-MM-DD', minutesUsed: number }
   dailyWork: {},          // { date: 'YYYY-MM-DD', minutesUsed: number } — cumulative work clock
   dailyDistracted: {},    // { date: 'YYYY-MM-DD', minutesUsed: number } — distracted time today
+  carrots: 0,             // 🥕 currency earned by focusing
+  wardrobe: { owned: [], worn: null },  // shop cosmetics for Mochi
+  dailyStrikes: {},       // { date, count } — blocker strikes today (escalates threshold)
+  carrotState: {},        // { date, blocksAwarded, ringClosed } — carrot award bookkeeping
   workLog: [],            // [{ date, at, reason, unfinished[] }] — End Work reasons
   activityLog: [],        // [{ at, icon, text, points }] — recent gamified events, newest first
   settings: {

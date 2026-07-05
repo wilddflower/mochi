@@ -34,6 +34,8 @@ class MoodEngine extends EventEmitter {
     this._milestoneMinutes = 0
     this._nextMilestone = MILESTONE_INTERVALS[0]
 
+    this._blockThresholdMs = DISTRACTION_BLOCK_MS
+
     this._startIdleTimer()
     this._startDistractionTick()
     // Compute initial mood (e.g. sleeping if outside active hours on launch)
@@ -105,6 +107,11 @@ class MoodEngine extends EventEmitter {
   setNagging(hasOverdue) {
     this._hasNagging = hasOverdue
     this._recalculateMood()
+  }
+
+  // Escalating strikes: main lowers the blocker threshold after each block today.
+  setBlockThreshold(ms) {
+    this._blockThresholdMs = Math.max(10_000, ms)
   }
 
   // Called when the user dismisses the full-screen blocker: restart the 5-min
@@ -207,8 +214,8 @@ class MoodEngine extends EventEmitter {
         this.emit('distraction-timer', Math.floor(elapsedMs / 1000))
         // Escalate sad → angry at 1 min even with no window change.
         this._recalculateMood()
-        // Full-screen lock-in once past 5 min (accumulated across the streak).
-        if (elapsedMs >= DISTRACTION_BLOCK_MS && !this._blockEmitted) {
+        // Full-screen lock-in once past the (strike-adjustable) threshold.
+        if (elapsedMs >= this._blockThresholdMs && !this._blockEmitted) {
           this._blockEmitted = true
           const info = this._lastWindowInfo || {}
           this.emit('block-site', info.windowTitle || info.processName || 'that site')

@@ -22,6 +22,19 @@ let sessionTracker, sessionManager, taskManager, quoteEngine
 let blocking = false  // true while the full-screen lock-in blocker is up
 let reasonAttempts = 0   // End-Work excuse gauntlet: Mochi rejects the first two
 let reasonExcuses = []   // ...and logs every excuse she was given
+let sessionGoal = null   // the todo she committed to attacking this session
+
+const LOCK_MINUTES = 60  // 🔒 locked-session length
+// Escalating strikes: blocker threshold per prior block today (5m → 3m → 1m → 10s)
+const STRIKE_THRESHOLDS_MS = [5 * 60000, 3 * 60000, 1 * 60000, 10 * 1000]
+const SHOP_ITEMS = [
+  { id: 'bow', emoji: '🎀', name: 'hair bow', cost: 10 },
+  { id: 'flower', emoji: '🌸', name: 'flower', cost: 15 },
+  { id: 'scarf', emoji: '🧣', name: 'scarf', cost: 20 },
+  { id: 'glasses', emoji: '🕶️', name: 'sunnies', cost: 25 },
+  { id: 'sprout', emoji: '🌱', name: 'sprout friend', cost: 30 },
+  { id: 'crown', emoji: '👑', name: 'crown', cost: 40 }
+]
 
 
 // Single-instance lock — auto-launch and the login Startup shortcut can both try
@@ -116,11 +129,24 @@ app.whenReady().then(async () => {
     windowManager.sendToOverlay('distraction-timer-update', seconds)
   })
 
-  // 5 min on a distraction during a work session → full-screen lock-in.
+  // Distraction threshold crossed during a work session → full-screen lock-in.
+  // Every block today is a strike: the next one fires sooner (5m → 3m → 1m → 10s),
+  // and each strike costs carrots.
   moodEngine.on('block-site', (name) => {
     if (sessionManager.state !== 'working' || store.get('settings.paused')) return
     blocking = true
-    windowManager.showBlocker(name)
+    addStrike()
+    addCarrots(-2, `strike ${strikesToday()} — caught on ${String(name).slice(0, 30)}`)
+    windowManager.showBlocker(name, sessionManager.isLocked())
+  })
+
+  // Strikes from earlier today still apply after a restart.
+  applyStrikeThreshold()
+
+  sessionManager.on('locked-denied', () => {
+    const min = sessionManager.getStatus().lockRemainingMin
+    windowManager.sendToOverlay('mood-changed', { mood: 'angry', prevMood: 'happy' })
+    windowManager.sendToOverlay('quote-show', `🔒 locked session. ${min} min left — no breaks, no escape.`)
   })
 
   // Session manager → mood engine + overlay
@@ -168,7 +194,21 @@ app.whenReady().then(async () => {
     const count = taskManager.getOverdueTasks().length
     windowManager.sendToOverlay('task-badge-update', count)
     windowManager.sendToDashboard('tasks-update', taskManager.getTasks())
-    windowManager.sendToDashboard('gamification-update', computeGamification())
+    const g = computeGamification()
+    windowManager.sendToDashboard('gamification-update', g)
+
+    // Carrots: +3 per focus block, +5 for closing the daily ring (once/day).
+    const today = store.getTodayKey()
+    const cs = store.get('carrotState') || {}
+    const awarded = cs.date === today ? (cs.blocksAwarded || 0) : 0
+    const ringClosed = cs.date === today ? !!cs.ringClosed : false
+    const newBlocks = g.blocksDone - awarded
+    if (newBlocks > 0) addCarrots(3 * newBlocks, newBlocks > 1 ? `${newBlocks} focus blocks done` : 'focus block done')
+    const closesRing = !ringClosed && g.blocksDone >= g.goalBlocks && g.blocksDone > 0
+    if (closesRing) addCarrots(5, 'daily ring closed!')
+    if (newBlocks > 0 || closesRing) {
+      store.set('carrotState', { date: today, blocksAwarded: Math.max(awarded, g.blocksDone), ringClosed: ringClosed || closesRing })
+    }
   }, 5000)
 
   sessionTracker.checkDateRollover()
@@ -253,6 +293,58 @@ function computeGamification() {
   }
 }
 
+// ── Carrot economy 🥕 ────────────────────────────────────────────────
+function getCarrots() { return store.get('carrots') || 0 }
+
+function addCarrots(n, why) {
+  const total = Math.max(0, getCarrots() + n)
+  store.set('carrots', total)
+  windowManager.sendToOverlay('carrots-update', total)
+  windowManager.sendToDashboard('shop-update', shopState())
+  if (why) logActivity({ icon: '🥕', text: `${n > 0 ? '+' : ''}${n} 🥕 — ${why}`, points: 0 })
+  return total
+}
+
+function shopState() {
+  return { carrots: getCarrots(), wardrobe: store.get('wardrobe') || { owned: [], worn: null }, items: SHOP_ITEMS }
+}
+
+function pushWornAccessory() {
+  const w = store.get('wardrobe') || {}
+  const item = SHOP_ITEMS.find(i => i.id === w.worn)
+  windowManager.sendToOverlay('wardrobe-update', item ? item.emoji : '')
+}
+
+// ── Escalating strikes ───────────────────────────────────────────────
+function strikesToday() {
+  const s = store.get('dailyStrikes') || {}
+  return s.date === store.getTodayKey() ? (s.count || 0) : 0
+}
+
+function applyStrikeThreshold() {
+  const idx = Math.min(strikesToday(), STRIKE_THRESHOLDS_MS.length - 1)
+  moodEngine.setBlockThreshold(STRIKE_THRESHOLDS_MS[idx])
+}
+
+function addStrike() {
+  store.set('dailyStrikes', { date: store.getTodayKey(), count: strikesToday() + 1 })
+  applyStrikeThreshold()
+}
+
+// ── Session goal check-in ────────────────────────────────────────────
+function settleSessionGoal() {
+  if (!sessionGoal) return ''
+  const goal = sessionGoal
+  sessionGoal = null
+  const item = getTodayList().find(t => t.text === goal)
+  if (item && item.done) {
+    addCarrots(2, `kept your word on "${goal}"`)
+    return ` you said "${goal}" and you DID it ✅`
+  }
+  logActivity({ icon: '😐', text: `said "${goal}"… didn't finish it`, points: 0 })
+  return ` you said "${goal}"… still not done 😐 logged.`
+}
+
 // Append an event and push fresh gamification + activity to the dashboard.
 function logActivity(entry) {
   store.pushActivity(entry)
@@ -271,6 +363,8 @@ function setupIpcHandlers() {
     windowManager.sendToOverlay('sprite-manifest', buildSpriteManifest())
     windowManager.sendToOverlay('session-status', sessionManager.getStatus())
     pushTodayList()
+    windowManager.sendToOverlay('carrots-update', getCarrots())
+    pushWornAccessory()
     windowManager.sendToOverlay('open-panel')
     windowManager.sendToOverlay('quote-show', 'hi pavni! 🐰 ready to start a work session?')
   })
@@ -278,9 +372,11 @@ function setupIpcHandlers() {
   // ── Session controls ──
   // No fresh session without a plan: at least one unfinished item on today's
   // list before Start Work. (Resuming from a break is exempt — flow > nagging.)
-  ipcMain.on('session-start-work', () => {
+  // Fresh sessions also get the goal check-in: which todo are you attacking?
+  const startSession = (lockMinutes) => {
     const unfinished = getTodayList().filter(t => !t.done)
-    if (sessionManager.state === 'idle' && unfinished.length === 0) {
+    const fresh = sessionManager.state === 'idle'
+    if (fresh && unfinished.length === 0) {
       windowManager.forceShow()
       windowManager.sendToOverlay('open-panel')
       flashMood('nagging', 4000)
@@ -288,7 +384,22 @@ function setupIpcHandlers() {
       windowManager.sendToOverlay('focus-todo')
       return
     }
-    sessionManager.startWork()
+    sessionManager.startWork(lockMinutes)
+    if (fresh) {
+      sessionGoal = null
+      windowManager.sendToOverlay('ask-goal', unfinished.map(t => t.text))
+      if (lockMinutes) {
+        windowManager.sendToOverlay('quote-show', `🔒 LOCKED for ${lockMinutes} min. no end button, no breaks. we're in this now.`)
+      }
+    }
+  }
+  ipcMain.on('session-start-work', () => startSession())
+  ipcMain.on('session-start-locked', () => startSession(LOCK_MINUTES))
+
+  // She picked which todo she's attacking this session.
+  ipcMain.on('session-goal', (_, text) => {
+    sessionGoal = String(text || '').trim() || null
+    if (sessionGoal) windowManager.sendToOverlay('quote-show', `"${sessionGoal}" — ok. lock in 💪`)
   })
   ipcMain.on('session-take-break', () => sessionManager.takeBreak())
 
@@ -302,6 +413,14 @@ function setupIpcHandlers() {
   // End Work: if the to-do list isn't done, get annoyed and demand a reason
   // before ending. Otherwise end happily.
   ipcMain.on('session-end-work', () => {
+    // Locked sessions have no exit — not even the excuse gauntlet.
+    if (sessionManager.state !== 'idle' && sessionManager.isLocked()) {
+      const min = sessionManager.getStatus().lockRemainingMin
+      windowManager.forceShow()
+      flashMood('angry', 5000)
+      windowManager.sendToOverlay('quote-show', `🔒 you LOCKED this session. ${min} min to go. back to work.`)
+      return
+    }
     const unfinished = getTodayList().filter(t => !t.done)
     if (unfinished.length > 0) {
       reasonAttempts = 0
@@ -315,9 +434,10 @@ function setupIpcHandlers() {
       sessionManager.endWork()
       flashMood('celebrate', 4000)
       const d = Math.round(sessionManager.getSessionDistractedMinutes())
-      windowManager.sendToOverlay('quote-show', d >= 1
-        ? `great work!! 🎉 ${d} min distracted this session — that came off your break`
-        : 'great work today!! zero distractions 🎉')
+      const goalNote = settleSessionGoal()
+      windowManager.sendToOverlay('quote-show', (d >= 1
+        ? `great work!! 🎉 ${d} min distracted this session — that came off your break.`
+        : 'great work today!! zero distractions 🎉') + goalNote)
       logActivity({ icon: '🏁', text: 'Wrapped a session · ' + d + ' min distracted', points: 0 })
     }
   })
@@ -356,8 +476,9 @@ function setupIpcHandlers() {
     reasonAttempts = 0
     reasonExcuses = []
     sessionManager.endWork()
+    const goalNote = settleSessionGoal()
     windowManager.sendToOverlay('quote-show',
-      `UGH. fine. 😤 all 3 excuses are in the log + ${distractedMin} min distracted. tmrw we do better.`)
+      `UGH. fine. 😤 all 3 excuses are in the log + ${distractedMin} min distracted.${goalNote} tmrw we do better.`)
   })
 
   // ── Today list ──
@@ -379,6 +500,7 @@ function setupIpcHandlers() {
     pushTodayList()
 
     if (item.done) {
+      addCarrots(2, `task done: ${item.text.slice(0, 30)}`)
       const remaining = getTodayList().filter(t => !t.done).length
       if (remaining === 0) {
         // Whole list cleared → crown celebration
@@ -438,6 +560,32 @@ function setupIpcHandlers() {
   // ── Gamification ──
   ipcMain.handle('get-gamification', () => computeGamification())
   ipcMain.handle('get-activity', () => (store.get('activityLog') || []).slice(0, 12))
+
+  // ── Carrot shop 🥕 ──
+  ipcMain.handle('get-shop', () => shopState())
+  ipcMain.handle('shop-buy', (_, id) => {
+    const item = SHOP_ITEMS.find(i => i.id === id)
+    const w = store.get('wardrobe') || { owned: [], worn: null }
+    if (!item || w.owned.includes(id)) return shopState()
+    if (getCarrots() < item.cost) {
+      windowManager.sendToOverlay('quote-show', `not enough carrots for the ${item.name} 🥕 keep focusing`)
+      return shopState()
+    }
+    addCarrots(-item.cost, `bought the ${item.name} ${item.emoji}`)
+    w.owned.push(id)
+    w.worn = id
+    store.set('wardrobe', w)
+    pushWornAccessory()
+    windowManager.sendToOverlay('quote-show', `the ${item.name} ${item.emoji}!! she's beautiful`)
+    return shopState()
+  })
+  ipcMain.handle('shop-wear', (_, id) => {
+    const w = store.get('wardrobe') || { owned: [], worn: null }
+    w.worn = (id && w.owned.includes(id)) ? id : null
+    store.set('wardrobe', w)
+    pushWornAccessory()
+    return shopState()
+  })
 
   // ── Lists / settings ──
   ipcMain.handle('get-lists', () => ({

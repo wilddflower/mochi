@@ -605,6 +605,12 @@ body{
     </div>
 
     <div class="card">
+      <h2 class="section-title">Carrot shop 🥕</h2>
+      <p class="section-sub" style="margin-bottom:12px;">Balance: <b id="carrot-balance" class="pixel">0</b> — earn by focusing + finishing tasks, lose by getting caught slacking.</p>
+      <div id="shop-grid" class="stat-grid"></div>
+    </div>
+
+    <div class="card">
       <h2 class="section-title">Settings</h2>
       <div class="setting-row">
         <div>
@@ -658,7 +664,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name))
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `panel-${name}`))
-  if (name === 'stats') { refreshStats(); refreshGamification(); refreshActivity() }
+  if (name === 'stats') { refreshStats(); refreshGamification(); refreshActivity(); refreshShop() }
 }
 
 window.mochi.onSwitchTab(name => switchTab(name))
@@ -675,6 +681,7 @@ async function init() {
   await refreshStats()
   await refreshGamification()
   await refreshActivity()
+  await refreshShop()
 
   // Startup toggle is a checkbox — reflect the real OS state.
   startupEnabled = await window.mochi.getStartupStatus()
@@ -908,6 +915,35 @@ function renderGamification(g) {
 async function refreshActivity() {
   renderActivity(await window.mochi.getActivity())
 }
+
+// ── Carrot shop 🥕 ──────────────────────────────────────────────────
+async function refreshShop() {
+  renderShop(await window.mochi.getShop())
+}
+
+function renderShop(s) {
+  if (!s) return
+  const bal = document.getElementById('carrot-balance')
+  if (bal) bal.textContent = s.carrots
+  const grid = document.getElementById('shop-grid')
+  if (!grid) return
+  grid.innerHTML = s.items.map(function (it) {
+    const owned = s.wardrobe.owned.includes(it.id)
+    const worn = s.wardrobe.worn === it.id
+    const btn = worn
+      ? '<button class="btn-ghost" onclick="wearItem(null)">worn ✓</button>'
+      : owned
+        ? '<button class="btn-ghost" onclick="wearItem(\'' + it.id + '\')">wear</button>'
+        : '<button class="btn-primary" onclick="buyItem(\'' + it.id + '\')">' + it.cost + ' 🥕</button>'
+    return '<div class="stat" style="text-align:center;">' +
+      '<span style="font-size:26px;display:block;">' + it.emoji + '</span>' +
+      '<div style="font-size:11px;margin:6px 0;color:var(--plum);">' + escHtml(it.name) + '</div>' + btn + '</div>'
+  }).join('')
+}
+
+async function buyItem(id) { renderShop(await window.mochi.shopBuy(id)) }
+async function wearItem(id) { renderShop(await window.mochi.shopWear(id)) }
+window.mochi.onShopUpdate(s => renderShop(s))
 
 function renderActivity(list) {
   const el = document.getElementById('activity')

@@ -19,6 +19,8 @@ class SessionManager extends EventEmitter {
     this.distracted = false
     this._distractedStartedAt = null
     this._sessionDistractedMs = 0
+    // Locked session: until this timestamp, End Work and breaks are refused.
+    this.lockedUntil = null
     this._tick = setInterval(() => this._onTick(), 1000)
   }
 
@@ -70,7 +72,7 @@ class SessionManager extends EventEmitter {
   }
 
   // ── Transitions ───────────────────────────────────────────────────
-  startWork() {
+  startWork(lockMinutes) {
     const wasIdle = this.state === 'idle'
     if (this.state === 'break') this._bankBreak()
     else if (this.state === 'working') { this._bankDistracted(); this._bankWork() } // re-entrant safety
@@ -79,13 +81,24 @@ class SessionManager extends EventEmitter {
     this.breakStartedAt = null
     this.distracted = false
     this._distractedStartedAt = null
-    if (wasIdle) this._sessionDistractedMs = 0 // fresh session, not a resume from break
+    if (wasIdle) {
+      this._sessionDistractedMs = 0 // fresh session, not a resume from break
+      this.lockedUntil = lockMinutes ? Date.now() + lockMinutes * 60000 : null
+    }
     this._emitState()
+  }
+
+  isLocked() {
+    return !!(this.lockedUntil && Date.now() < this.lockedUntil)
   }
 
   // Returns false if the daily break budget is exhausted.
   takeBreak() {
     if (this.state === 'break') return true // already on break — no-op
+    if (this.state === 'working' && this.isLocked()) {
+      this.emit('locked-denied')
+      return false
+    }
     if (this.getBreakUsedMinutes() >= BREAK_BUDGET_MIN) {
       this.emit('break-denied')
       return false
@@ -100,6 +113,10 @@ class SessionManager extends EventEmitter {
   }
 
   endWork() {
+    if (this.state !== 'idle' && this.isLocked()) {
+      this.emit('locked-denied')
+      return false
+    }
     if (this.state === 'break') this._bankBreak()
     else if (this.state === 'working') { this._bankDistracted(); this._bankWork() }
     this.state = 'idle'
@@ -107,7 +124,9 @@ class SessionManager extends EventEmitter {
     this.breakStartedAt = null
     this.distracted = false
     this._distractedStartedAt = null
+    this.lockedUntil = null
     this._emitState()
+    return true
   }
 
   // ── Distraction = automatic break ─────────────────────────────────
@@ -188,6 +207,8 @@ class SessionManager extends EventEmitter {
       breakAllowed: remaining > 0,
       distracted: this.distracted,
       sessionDistractedMin: Math.round(this.getSessionDistractedMinutes() * 10) / 10,
+      locked: this.isLocked(),
+      lockRemainingMin: this.isLocked() ? Math.ceil((this.lockedUntil - Date.now()) / 60000) : 0,
       ...extra
     }
   }

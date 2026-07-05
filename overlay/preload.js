@@ -20,8 +20,13 @@ contextBridge.exposeInMainWorld('mochi', {
 
   // Session controls
   startWork: () => ipcRenderer.send('session-start-work'),
+  startLocked: () => ipcRenderer.send('session-start-locked'),
   takeBreak: () => ipcRenderer.send('session-take-break'),
   endWork: () => ipcRenderer.send('session-end-work'),
+  chooseGoal: (text) => ipcRenderer.send('session-goal', text),
+  onAskGoal: (cb) => ipcRenderer.on('ask-goal', (_, items) => cb(items)),
+  onCarrotsUpdate: (cb) => ipcRenderer.on('carrots-update', (_, n) => cb(n)),
+  onWardrobeUpdate: (cb) => ipcRenderer.on('wardrobe-update', (_, emoji) => cb(emoji)),
   submitReason: (reason) => ipcRenderer.send('work-reason', reason),
   onAskReason: (cb) => ipcRenderer.on('ask-reason', (_, items) => cb(items)),
   onReasonRejected: (cb) => ipcRenderer.on('reason-rejected', (_, msg) => cb(msg)),

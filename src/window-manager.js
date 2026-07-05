@@ -126,9 +126,9 @@ class WindowManager {
     this.blockerWindow.on('closed', () => { this.blockerWindow = null })
   }
 
-  showBlocker(name) {
+  showBlocker(name, locked) {
     if (!this.blockerWindow || this.blockerWindow.isDestroyed()) return
-    this.blockerWindow.webContents.send('blocker-info', name)
+    this.blockerWindow.webContents.send('blocker-info', { name, locked: !!locked })
     // Re-cover the full primary display in case resolution changed.
     const b = screen.getPrimaryDisplay().bounds
     this.blockerWindow.setBounds({ x: b.x, y: b.y, width: b.width, height: b.height })

@@ -100,6 +100,21 @@
   .btn-break { background: #ffffff; color: var(--text); }
   .btn-end   { background: #ffffff; color: var(--muted); }
   .btn-break:hover, .btn-end:hover { background: var(--accent-tint); color: var(--accent); }
+  .btn-lock  { flex: 0 0 32%; background: #ffffff; color: var(--text); }
+  .btn-lock:hover { background: #FFF4E5; color: var(--amber); }
+  .lockpill  { flex: 1; text-align: center; padding: 11px 6px; font-size: 10px; font-weight: 700;
+               letter-spacing: 1px; text-transform: uppercase; color: var(--amber); }
+
+  /* Session goal check-in */
+  #goal-box { display: none; flex-direction: column; gap: 8px; background: #FFFFFF;
+              border: 1px solid var(--rule); border-radius: 0; padding: 12px; }
+  #goal-box.show { display: flex; }
+  #goal-box .gb-t { font-size: 11px; font-weight: 700; color: var(--text); }
+  #goal-box button { border: 1px solid var(--border); background: none; text-align: left;
+                     font-family: inherit; font-size: 11.5px; color: var(--text);
+                     padding: 8px 10px; cursor: pointer; border-radius: 0;
+                     transition: border-color .12s, color .12s; }
+  #goal-box button:hover { border-color: var(--accent); color: var(--accent); }
 
   /* End-Work reason prompt */
   #reason-box { display: none; flex-direction: column; gap: 8px;
@@ -280,7 +295,7 @@
 
   <!-- Pop-out panel -->
   <div id="panel">
-    <div class="masthead"><span>Mochi</span><span>Session</span></div>
+    <div class="masthead"><span>Mochi</span><span id="carrot-chip">🥕 0</span></div>
     <div class="panel-greeting" id="greeting">hi pavni</div>
     <div class="panel-status" id="status-line">ready to start a work session?</div>
 
@@ -295,6 +310,11 @@
       <div class="rt" id="reason-text">why are you stopping early? 😤</div>
       <input type="text" id="reason-input" placeholder="give me a reason..." maxlength="120">
       <button class="btn btn-end" id="reason-submit">tell Mochi</button>
+    </div>
+
+    <div id="goal-box">
+      <div class="gb-t">which one are you attacking? 🎯</div>
+      <div id="goal-opts" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
 
     <div class="today-head">Today's list</div>
@@ -312,6 +332,7 @@
   <!-- Character -->
   <div id="character-wrap">
     <div id="task-badge">0</div>
+    <div id="accessory" style="position:absolute;top:2px;left:50%;transform:translateX(-50%);font-size:24px;z-index:6;pointer-events:none;"></div>
     <img id="mochi-img" alt="">
     <svg id="mochi" class="mood-encouraging" viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
       <rect x="28" y="5" width="20" height="44" rx="10" fill="#f5e6e6" stroke="#444" stroke-width="2"/>
@@ -484,8 +505,13 @@ function fmtMin(min) {
 function renderControls(status) {
   const s = status.state
   if (s === 'idle') {
-    controlsEl.innerHTML = '<button class="btn btn-work" id="c-start">▶ Start Work</button>'
+    controlsEl.innerHTML =
+      '<button class="btn btn-work" id="c-start">▶ Start Work</button>' +
+      '<button class="btn btn-lock" id="c-lock" title="no end button, no breaks, 60 minutes">🔒 1h</button>'
     document.getElementById('c-start').onclick = () => window.mochi.startWork()
+    document.getElementById('c-lock').onclick = () => window.mochi.startLocked()
+  } else if (s === 'working' && status.locked) {
+    controlsEl.innerHTML = '<div class="lockpill">🔒 locked · ' + (status.lockRemainingMin || 0) + 'm left</div>'
   } else if (s === 'working') {
     const disabled = status.breakAllowed ? '' : 'disabled'
     controlsEl.innerHTML =
@@ -619,6 +645,30 @@ window.mochi.onReasonRejected(msg => {
 window.mochi.onFocusTodo(() => {
   openPanel()
   todoInput.focus()
+})
+
+// Session goal check-in: pick which todo you're attacking.
+const goalBox = document.getElementById('goal-box')
+const goalOpts = document.getElementById('goal-opts')
+window.mochi.onAskGoal(items => {
+  if (!items || !items.length) return
+  goalOpts.innerHTML = ''
+  items.forEach(t => {
+    const b = document.createElement('button')
+    b.textContent = t
+    b.onclick = () => { window.mochi.chooseGoal(t); goalBox.classList.remove('show') }
+    goalOpts.appendChild(b)
+  })
+  goalBox.classList.add('show')
+  openPanel()
+})
+
+// Carrot balance + worn accessory
+window.mochi.onCarrotsUpdate(n => {
+  document.getElementById('carrot-chip').textContent = '🥕 ' + n
+})
+window.mochi.onWardrobeUpdate(emoji => {
+  document.getElementById('accessory').textContent = emoji || ''
 })
 
 window.mochi.onDistractionTimer(seconds => {

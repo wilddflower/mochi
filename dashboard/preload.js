@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('mochi', {
   getGamification: () => ipcRenderer.invoke('get-gamification'),
   getActivity: () => ipcRenderer.invoke('get-activity'),
 
+  // Carrot shop
+  getShop: () => ipcRenderer.invoke('get-shop'),
+  shopBuy: (id) => ipcRenderer.invoke('shop-buy', id),
+  shopWear: (id) => ipcRenderer.invoke('shop-wear', id),
+  onShopUpdate: (cb) => ipcRenderer.on('shop-update', (_, s) => cb(s)),
+
   // Lists
   getLists: () => ipcRenderer.invoke('get-lists'),
   updateLists: (lists) => ipcRenderer.invoke('update-lists', lists),

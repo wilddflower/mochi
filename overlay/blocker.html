@@ -59,15 +59,36 @@
     <h1>back to work.</h1>
     <div class="sub">you've been on <span class="site" id="site">that site</span> for 5 minutes straight during a work session.</div>
     <button class="btn" id="dismiss">I'm refocusing &rarr;</button>
-    <div class="mins">mochi blocks again in 5 min if you stay</div>
+    <div id="lockrow" style="display:none;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#FF9500;margin-bottom:12px;">🔒 locked session — type it to leave</div>
+      <input id="lockinput" autocomplete="off" spellcheck="false"
+        placeholder="i will finish what i wrote down"
+        style="width:340px;max-width:80vw;background:#111;border:1px solid #4E77B5;border-radius:3px;color:#fff;font-family:'Space Mono',monospace;font-size:14px;padding:12px 14px;outline:none;text-align:center;">
+    </div>
+    <div class="mins" id="mins">mochi blocks again — faster — if you stay</div>
   </div>
 <script>
-  window.blocker.onInfo(name => {
+  const PHRASE = 'i will finish what i wrote down'
+  let locked = false
+  window.blocker.onInfo(data => {
+    const name = data && typeof data === 'object' ? data.name : data
+    locked = !!(data && typeof data === 'object' && data.locked)
     if (name) document.getElementById('site').textContent = name
+    document.getElementById('dismiss').style.display = locked ? 'none' : ''
+    document.getElementById('lockrow').style.display = locked ? '' : 'none'
+    const inp = document.getElementById('lockinput')
+    inp.value = ''
+    if (locked) setTimeout(() => inp.focus(), 150)
   })
   const dismiss = () => window.blocker.dismiss()
   document.getElementById('dismiss').onclick = dismiss
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'Enter') dismiss() })
+  // Unlocked: Esc/Enter dismisses. Locked: only typing the exact phrase does.
+  document.addEventListener('keydown', e => {
+    if (!locked && (e.key === 'Escape' || e.key === 'Enter')) dismiss()
+  })
+  document.getElementById('lockinput').addEventListener('input', e => {
+    if (locked && e.target.value.trim().toLowerCase() === PHRASE) dismiss()
+  })
 </script>
 </body>
 </html>

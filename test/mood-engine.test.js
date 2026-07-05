@@ -256,6 +256,15 @@ describe('MoodEngine — distraction streak grace (5-min blocker reliability)', 
     expect(blocks.length).toBe(0)
   })
 
+  test('setBlockThreshold lowers the trigger (escalating strikes)', () => {
+    const blocks = []
+    engine.on('block-site', (n) => blocks.push(n))
+    engine.setBlockThreshold(60 * 1000) // strike 3: 1 min
+    engine.onWindowChanged(DISCORD)
+    jest.advanceTimersByTime(61 * 1000)
+    expect(blocks.length).toBe(1)
+  })
+
   test('blocker fires only once per streak, and resetDistraction() re-arms it', () => {
     const blocks = []
     engine.on('block-site', (n) => blocks.push(n))
