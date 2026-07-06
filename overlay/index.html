@@ -484,9 +484,20 @@ function showBubble(text, ms = 4500) {
   bubbleTimeout = setTimeout(() => bubble.classList.remove('visible'), ms)
 }
 
-function openPanel() { panel.classList.add('open') }
-function closePanel() { panel.classList.remove('open') }
-function togglePanel() { panel.classList.toggle('open') }
+// While the panel is open the window stays SOLID — waiting for a mousemove to
+// flip click-through off loses fast clicks on slow/throttled machines (checkbox
+// clicks fell through to the window behind Mochi).
+function openPanel() {
+  panel.classList.add('open')
+  lastIgnore = false
+  window.mochi.setIgnoreMouseEvents(false)
+}
+function closePanel() {
+  panel.classList.remove('open')
+  lastIgnore = true
+  window.mochi.setIgnoreMouseEvents(true)
+}
+function togglePanel() { panel.classList.contains('open') ? closePanel() : openPanel() }
 
 function fmtClock(ms) {
   const totalSec = Math.floor(ms / 1000)
@@ -698,12 +709,11 @@ charWrap.addEventListener('mousedown', e => {
 })
 let lastIgnore = null
 document.addEventListener('mousemove', e => {
-  // Toggle click-through: solid only over Mochi or the open panel.
-  // Only send the IPC when the value actually changes (avoids per-move spam).
+  // Click-through: window is fully solid while the panel is open (see openPanel);
+  // otherwise solid only over Mochi herself.
   const el = document.elementFromPoint(e.clientX, e.clientY)
   const overChar = charWrap.contains(el)
-  const overPanel = panel.classList.contains('open') && panel.contains(el)
-  const ignore = !(overChar || overPanel)
+  const ignore = panel.classList.contains('open') ? false : !overChar
   if (ignore !== lastIgnore) {
     lastIgnore = ignore
     window.mochi.setIgnoreMouseEvents(ignore)

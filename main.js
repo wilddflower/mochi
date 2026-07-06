@@ -213,18 +213,17 @@ app.whenReady().then(async () => {
 
   sessionTracker.checkDateRollover()
 
-  // Global hotkey: show/hide Mochi entirely
-  // Toggle Mochi's visibility. Bind several accelerators so a conflict on one
-  // (another app already owns Ctrl+M, etc.) still leaves a working shortcut.
-  // The tray's "Show/Hide Mochi" item is the can't-be-intercepted fallback.
+  // Global hotkey: show/hide Mochi. ONE binding only — the extra fallbacks turned
+  // out to steal real shortcuts globally (Ctrl+Shift+M is VS Code's Problems
+  // panel, Alt+Shift+M collides with keyboard-layout switching). The tray's
+  // "Show/Hide Mochi" item is the conflict-proof fallback.
   const toggleViz = () => {
     windowManager.toggleOverlayVisibility()
     if (trayManager) trayManager.updatePauseLabel() // keep the tray Show/Hide label in sync
   }
-  const registered = ['CommandOrControl+M', 'CommandOrControl+Shift+M', 'Alt+Shift+M']
-    .filter(k => { try { return globalShortcut.register(k, toggleViz) } catch { return false } })
-  if (registered.length) console.log('[hotkey] toggle bound to:', registered.join(', '))
-  else console.error('[hotkey] no toggle shortcut could be registered — use the tray menu')
+  const hotkeyOk = globalShortcut.register('CommandOrControl+M', toggleViz)
+  if (hotkeyOk) console.log('[hotkey] toggle bound to: Ctrl+M')
+  else console.error('[hotkey] Ctrl+M taken — use the tray menu Show/Hide')
 
   await AutoLaunch.enableIfFirstRun(store)
 })
@@ -494,6 +493,7 @@ function setupIpcHandlers() {
   ipcMain.on('today-toggle', (_, id) => {
     const all = store.get('todayList') || []
     const item = all.find(t => t.id === id)
+    if (process.env.MOCHI_DEBUG) console.log('[todo-debug] main toggle', id, 'found=', !!item, 'wasDone=', item && item.done)
     if (!item) return
     item.done = !item.done
     store.set('todayList', all)
