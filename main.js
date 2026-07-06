@@ -259,14 +259,16 @@ function xpForTask(task) {
 }
 
 // Consecutive days (ending today, or yesterday if today's still empty) with real focus.
+// Walks LOCAL calendar days to match store.getTodayKey's local date keys.
 function computeDayStreak(stats) {
-  const DAY = 86400000
-  const keyOf = (ms) => new Date(ms).toISOString().slice(0, 10)
+  const p = (n) => String(n).padStart(2, '0')
+  const keyOf = (d) => `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
   const has = (k) => !!(stats[k] && (stats[k].focusMinutes || 0) >= STREAK_MIN)
-  let cursor = Date.parse(store.getTodayKey() + 'T00:00:00.000Z')
-  if (!has(keyOf(cursor))) cursor -= DAY // today not active yet — streak can still be alive
+  const cursor = new Date()
+  cursor.setHours(0, 0, 0, 0)
+  if (!has(keyOf(cursor))) cursor.setDate(cursor.getDate() - 1) // today not active yet — streak can still be alive
   let streak = 0
-  while (has(keyOf(cursor))) { streak++; cursor -= DAY }
+  while (has(keyOf(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1) }
   return streak
 }
 

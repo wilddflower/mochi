@@ -98,6 +98,11 @@ class WindowManager {
       }
     })
 
+    if (process.env.MOCHI_DEBUG) {
+      this.dashboardWindow.webContents.on('console-message', (_e, _lvl, msg) => {
+        console.log('[dashboard console]', msg)
+      })
+    }
     await this.dashboardWindow.loadFile(path.join(__dirname, '..', 'dashboard', 'index.html'))
 
     this.dashboardWindow.on('close', (e) => {

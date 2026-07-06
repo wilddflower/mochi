@@ -1,12 +1,20 @@
 const { powerMonitor } = require('electron')
 
+// LOCAL calendar date (see store.getTodayKey — toISOString is UTC and flips
+// the "day" mid-afternoon west of UTC, resetting stats at the wrong time).
+function localDateKey() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
 class SessionTracker {
   constructor(store, moodEngine) {
     this.store = store
     this.moodEngine = moodEngine
     this._currentMood = 'encouraging'
     this._moodStartTime = Date.now()
-    this._currentDate = new Date().toISOString().slice(0, 10)
+    this._currentDate = localDateKey()
 
     // 3-trigger daily reset strategy
     setInterval(() => this.checkDateRollover(), 60_000)
@@ -18,7 +26,7 @@ class SessionTracker {
   }
 
   checkDateRollover() {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = localDateKey()
     if (today !== this._currentDate) {
       this._currentDate = today
       this._resetDailyStats()

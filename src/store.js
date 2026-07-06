@@ -92,6 +92,7 @@ class MochiStore {
     // the new content without losing custom entries or resurrecting deleted ones.
     this._seedContent()
     this._seedContentV2()
+    this._normalizeFutureDates()
   }
 
   // Second content wave: the full distraction block catalog (games, streaming,
@@ -137,7 +138,25 @@ class MochiStore {
   }
 
   getTodayKey() {
-    return new Date().toISOString().slice(0, 10)
+    // LOCAL calendar date — never toISOString(): that's UTC, which flips to
+    // "tomorrow" mid-afternoon for anyone west of UTC. Result was: touch a todo
+    // after ~5pm and it vanishes (its stored date no longer matches "today").
+    const d = new Date()
+    const p = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  }
+
+  // One-time repair: clock jumps + the old UTC keys left items stamped with
+  // FUTURE dates, which makes them invisible. Pull anything future-dated back
+  // to today so it shows up again.
+  _normalizeFutureDates() {
+    const today = this.getTodayKey()
+    const list = this.get('todayList') || []
+    let changed = false
+    for (const t of list) {
+      if (t.date > today) { t.date = today; changed = true }
+    }
+    if (changed) this.set('todayList', list)
   }
 
   getTodayStats() {
